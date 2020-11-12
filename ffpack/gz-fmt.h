@@ -1,6 +1,13 @@
 /** ffpack: .gz format
 2020, Simon Zolin */
 
+/*
+gz_header_read
+gz_header_write
+gz_trailer_read
+gz_trailer_write
+*/
+
 /* Format:
 (HEADER DATA TRAILER)...
 */
@@ -45,13 +52,14 @@ enum GZ_FLAGS {
 /** Read .gz header
 Return enum GZ_FLAGS;
  -1 on error */
-static inline int gz_header_read(const void *buf, ffuint *mtime_sec)
+static inline int gz_header_read(const void *buf, ffuint *comp_method, ffuint *mtime_sec)
 {
 	const struct gz_header *h = (struct gz_header*)buf;
-	if (!(h->id[0] == 0x1f && h->id[1] == 0x8b && h->comp_method == 8)) {
+	if (!(h->id[0] == 0x1f && h->id[1] == 0x8b)) {
 		return -1;
 	}
-	*mtime_sec = ffint_le_cpu16(*(int*)h->mtime);
+	*comp_method = h->comp_method;
+	*mtime_sec = ffint_le_cpu16_ptr(h->mtime);
 	return h->flags;
 }
 
@@ -93,8 +101,8 @@ static inline ffsize gz_header_write(void *buf, const struct gz_header_info *inf
 static inline void gz_trailer_read(const void *buf, ffuint *crc, ffuint *orig_size)
 {
 	const struct gz_trailer *t = (struct gz_trailer*)buf;
-	*crc = ffint_le_cpu32(*(int*)t->crc);
-	*orig_size = ffint_le_cpu32(*(int*)t->orig_size);
+	*crc = ffint_le_cpu32_ptr(t->crc);
+	*orig_size = ffint_le_cpu32_ptr(t->orig_size);
 }
 
 /** Write .gz trailer

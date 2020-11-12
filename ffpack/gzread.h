@@ -199,10 +199,14 @@ static inline int ffgzread_process(ffgzread *r, ffstr *input, ffstr *output)
 		}
 
 		case R_HDR: {
-			ffuint mtime;
-			rc = gz_header_read((void*)data.ptr, &mtime);
+			ffuint comp_method, mtime;
+			rc = gz_header_read((void*)data.ptr, &comp_method, &mtime);
 			if (rc < 0) {
 				r->error = "bad gz header";
+				return FFGZREAD_ERROR;
+			}
+			if (comp_method != 8) {
+				r->error = "unsupported compression method";
 				return FFGZREAD_ERROR;
 			}
 			r->hdr_flags = rc;

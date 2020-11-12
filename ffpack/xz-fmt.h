@@ -2,6 +2,13 @@
 2020, Simon Zolin */
 
 /*
+xz_stmhdr_read
+xz_stmftr_read
+xz_blkhdr_read
+xz_idx_read
+*/
+
+/*
 (STM_HDR  [(BLK_HDR  DATA  [BLK_PADDING]  [CHECK])...]  IDX  STM_FTR)...
 */
 
@@ -63,7 +70,7 @@ static inline int xz_stmhdr_read(const void *buf, const char **error)
 	}
 
 	ffuint crc = crc32((void*)h->flags, 2, 0);
-	if (crc != ffint_le_cpu32(*(ffuint*)h->crc32)) {
+	if (crc != ffint_le_cpu32_ptr(h->crc32)) {
 		*error = "bad stream header CRC";
 		return -1;
 	}
@@ -84,7 +91,7 @@ static inline ffint64 xz_stmftr_read(const void *buf, const char **error)
 	const struct xz_stmftr *f = (struct xz_stmftr*)buf;
 
 	ffuint crc = crc32((void*)f->index_size, 6, 0);
-	if (crc != ffint_le_cpu32(*(ffuint*)f->crc32)) {
+	if (crc != ffint_le_cpu32_ptr(f->crc32)) {
 		*error = "bad stream footer CRC";
 		return -1;
 	}
@@ -94,7 +101,7 @@ static inline ffint64 xz_stmftr_read(const void *buf, const char **error)
 		return -1;
 	}
 
-	ffuint64 idx_size = (ffint_le_cpu32(*(int*)f->index_size) + 1) * 4;
+	ffuint64 idx_size = ((ffuint64)ffint_le_cpu32_ptr(f->index_size) + 1) * 4;
 	if (idx_size > (ffuint)-1) {
 		*error = "too large index size in stream footer";
 		return -1;
@@ -169,7 +176,7 @@ static int xz_blkhdr_read(const void *buf, ffsize len, lzma_filter_props *filts,
 	ffstr_shift(&d, padding);
 
 	ffuint crc = crc32(buf, len - 4, 0);
-	if (d.len != 4 || crc != ffint_le_cpu32(*(ffuint*)d.ptr)) {
+	if (d.len != 4 || crc != ffint_le_cpu32_ptr(d.ptr)) {
 		*error = "bad block header CRC";
 		return -1;
 	}
@@ -211,7 +218,7 @@ static ffint64 xz_idx_read(const void *buf, ffsize len, const char **error)
 	ffstr_shift(&d, padding);
 
 	ffuint crc = crc32(buf, len - 4, 0);
-	if (d.len != 4 || crc != ffint_le_cpu32(*(ffuint*)d.ptr)) {
+	if (d.len != 4 || crc != ffint_le_cpu32_ptr(d.ptr)) {
 		*error = "bad index CRC";
 		return -1;
 	}

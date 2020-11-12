@@ -7,7 +7,7 @@
 
 #define fflog(fmt, ...)  (void) printf(fmt "\n", ##__VA_ARGS__)
 
-char* plaindata[] = { "plain ", "data" };
+static char* plaindata[] = { "plain ", "data" };
 
 void test_gz_write(ffvec *buf)
 {

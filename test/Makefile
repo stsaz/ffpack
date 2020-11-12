@@ -37,12 +37,16 @@ endif
 # set utils
 RM := rm -f
 CP := cp -u
+SO := so
+ifeq ($(OS),win)
+	SO := dll
+else ifeq ($(OS),apple)
+	SO := dylib
+endif
 
 ROOT := ..
 FFPACK_DIR := $(ROOT)/ffpack
 FFBASE_DIR := $(ROOT)/ffbase
-FF3PT_DIR := $(ROOT)/ff-3pt
-FF3PT_BINDIR := $(ROOT)/ff-3pt-bin/$(OS)-amd64
 HDR := $(wildcard $(FFPACK_DIR)/ffpack/*.h)
 
 OUT_DIR := $(FFPACK_DIR)/test
@@ -66,14 +70,19 @@ all: $(TESTER)
 clean:
 	$(RM) $(TESTER) $(TEST_OBJ)
 
-TEST_CFLAGS := -I$(FFPACK_DIR) -I$(FFBASE_DIR) -I$(FF3PT_DIR) -Wall -Wextra -Werror -fvisibility=hidden
+depend:
+	cd ../zlib && make -Rr
+	cd ../lzma && make -Rr
+
+TEST_CFLAGS := -I$(FFPACK_DIR) -I$(FFBASE_DIR) \
+	-Wall -Wextra -Werror -fvisibility=hidden
 TEST_CFLAGS += -DFF_DEBUG -O0 -g
 TEST_CXXFLAGS := $(TEST_CFLAGS)
 TEST_CFLAGS += -std=gnu99
 # TEST_CFLAGS += -fsanitize=address
 # TEST_LDFLAGS += -fsanitize=address
 
-$(OUT_DIR)/%.o: $(FF3PT_DIR)/crc/%.c $(FFPACK_DIR)/test/Makefile
+$(OUT_DIR)/crc.o: $(FFPACK_DIR)/crc/crc.c $(FFPACK_DIR)/test/Makefile
 	$(C) $(TEST_CFLAGS) $< -o $@
 
 $(OUT_DIR)/%.o: $(FFPACK_DIR)/test/%.c $(HDR) $(FFPACK_DIR)/test/Makefile
@@ -83,6 +92,7 @@ $(OUT_DIR)/%.o: $(FFPACK_DIR)/test/%.cpp $(HDR) $(FFPACK_DIR)/test/Makefile
 	$(CXX) $(TEST_CXXFLAGS) $< -o $@
 
 $(TESTER): $(TEST_OBJ)
-	$(LINKER) $(TEST_LDFLAGS) $+ $(FF3PT_BINDIR)/libz-ff.so $(FF3PT_BINDIR)/liblzma-ff.so -o $@
-	$(CP) $(FF3PT_BINDIR)/libz-ff.so $(OUT_DIR)/
-	$(CP) $(FF3PT_BINDIR)/liblzma-ff.so $(OUT_DIR)/
+	$(LINKER) $(TEST_LDFLAGS) $+ \
+		$(FFPACK_DIR)/zlib/libz-ff.$(SO) $(FFPACK_DIR)/lzma/liblzma-ff.$(SO) -o $@
+	$(CP) $(FFPACK_DIR)/zlib/libz-ff.$(SO) $(OUT_DIR)/
+	$(CP) $(FFPACK_DIR)/lzma/liblzma-ff.$(SO) $(OUT_DIR)/

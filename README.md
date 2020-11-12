@@ -3,6 +3,8 @@
 ffpack is a fast C library that can pack (compress) and unpack (decompress) data to/from the popular archive formats.
 
 * Features
+* Build dependency libraries
+* Test
 * How to use the reader (single-file)
 * How to use the writer (single-file)
 * How to use the reader (multi-file)
@@ -11,9 +13,9 @@ ffpack is a fast C library that can pack (compress) and unpack (decompress) data
 
 ## Features
 
-* .gz read/write (`ffpack/gzread.h`, `ffpack/gzwrite.h`)
-* .xz read (`ffpack/xzread.h`)
-* .zip read/write (`ffpack/zipread.h`, `ffpack/zipwrite.h`)
+* .gz read/write (`ffpack/gzread.h`, `ffpack/gzwrite.h`).  Dependencies: libz-ff.
+* .xz read (`ffpack/xzread.h`).  Dependencies: liblzma-ff.
+* .zip read/write (`ffpack/zipread.h`, `ffpack/zipwrite.h`).  Dependencies: libz-ff.
 
 It doesn't contain code that reads or writes files - this is the responsibility of the user.
 
@@ -24,6 +26,32 @@ Use helper functions and structures if you want to write your own readers and wr
 * .gz format (`ffpack/gz-fmt.h`)
 * .xz format (`ffpack/xz-fmt.h`)
 * .zip format (`ffpack/zip-fmt.h`)
+
+
+## Build dependency libraries
+
+There are scripts to automatically download and build the required dependency libraries (libz-ff, liblzma-ff from these official packages: zlib, xz).
+
+	git clone https://github.com/stsaz/ffpack
+	cd ffpack/test
+	make depend
+
+This command will create these files:
+
+	lzma/liblzma-ff.so
+	zlib/libz-ff.so
+
+You should use them when compiling and linking your code with ffpack.
+
+
+## Test
+
+	git clone https://github.com/stsaz/ffbase
+	git clone https://github.com/stsaz/ffpack
+	cd ffpack/test
+	make depend
+	make
+	./ffpack-test
 
 
 ## How to use the reader (single-file)
@@ -200,4 +228,5 @@ Use helper functions and structures if you want to write your own readers and wr
 
 ## License
 
-This code is absolutely free.
+Third-party code is the property of their owners.
+All other code is absolutely free.
