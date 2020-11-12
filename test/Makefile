@@ -56,6 +56,7 @@ TEST_OBJ := \
 	$(OUT_DIR)/main.o \
 	$(OUT_DIR)/gz.o \
 	$(OUT_DIR)/xz.o \
+	$(OUT_DIR)/zip.o \
 	$(OUT_DIR)/compat.o \
 	\
 	$(OUT_DIR)/crc.o

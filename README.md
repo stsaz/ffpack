@@ -1,16 +1,19 @@
 # ffpack
 
-ffpack is a fast C library that can pack (compress) and unpack (decompress) data.
+ffpack is a fast C library that can pack (compress) and unpack (decompress) data to/from the popular archive formats.
 
 * Features
-* How to use the reader
-* How to use the writer
+* How to use the reader (single-file)
+* How to use the writer (single-file)
+* How to use the reader (multi-file)
+* How to use the writer (multi-file)
 
 
 ## Features
 
 * .gz read/write (`ffpack/gzread.h`, `ffpack/gzwrite.h`)
 * .xz read (`ffpack/xzread.h`)
+* .zip read/write (`ffpack/zipread.h`, `ffpack/zipwrite.h`)
 
 It doesn't contain code that reads or writes files - this is the responsibility of the user.
 
@@ -20,9 +23,10 @@ Use helper functions and structures if you want to write your own readers and wr
 
 * .gz format (`ffpack/gz-fmt.h`)
 * .xz format (`ffpack/xz-fmt.h`)
+* .zip format (`ffpack/zip-fmt.h`)
 
 
-## How to use the reader
+## How to use the reader (single-file)
 
 	ff... obj = {}
 	ff..._config conf = {};
@@ -59,7 +63,7 @@ Use helper functions and structures if you want to write your own readers and wr
 	ff..._close(&obj);
 
 
-## How to use the writer
+## How to use the writer (single-file)
 
 	ff... obj = {}
 	ff..._config conf = {};
@@ -80,7 +84,10 @@ Use helper functions and structures if you want to write your own readers and wr
 			goto done;
 
 		case FF..._MORE:
-			input = ...;
+			if (have_more_data)
+				input = ...;
+			else
+				ff..._finish(&obj);
 			continue;
 
 		default:
@@ -90,6 +97,105 @@ Use helper functions and structures if you want to write your own readers and wr
 
 	done:
 	ff..._destroy(&obj);
+
+
+## How to use the reader (multi-file)
+
+	ff... reader = {}
+	ff..._open(&reader);
+
+	ffstr input = {};
+	for (;;) {
+		ffstr output;
+		int r = ff..._process(&reader, &input, &output);
+
+		switch (r) {
+		case FF..._FILEINFO:
+			const ff..._fileinfo_t *info = ff..._fileinfo(&reader);
+			// info->hdr_offset
+			// ...
+			continue;
+
+		case FF..._FILEHEADER:
+			const ff..._fileinfo_t *info = ff..._fileinfo(&reader);
+			// ...
+			continue;
+
+		case FF..._DATA:
+			// use data from 'output'
+			continue;
+
+		case FF..._DONE:
+			if (!need_more_files)
+				goto done;
+			ff..._fileread(&reader, file_offset);
+			continue;
+
+		case FF..._SEEK:
+			seek(ff..._offset(&reader));
+			// fallthrough
+
+		case FF..._MORE:
+			input = ...;
+			continue;
+
+		default:
+			error(ff..._error(&reader));
+		}
+	}
+
+	done:
+	ff..._close(&reader);
+
+
+## How to use the writer (multi-file)
+
+	ff... writer = {}
+	int next_file = 1;
+
+	ffstr input = {};
+	for (;;) {
+
+		if (next_file) {
+			next_file = 0;
+			ff..._config conf = {};
+			conf.setting = value;
+			if (0 != ff..._fileadd(&writer, &conf))
+				error(ff..._error(&writer));
+		}
+
+		ffstr output;
+		int r = ff..._process(&writer, &input, &output);
+
+		switch (r) {
+		case FF..._DATA:
+			// use data from 'output'
+			continue;
+
+		case FF..._FILEDONE:
+			if (have_more_files)
+				next_file = 1;
+			else
+				ff..._finish(&writer);
+			continue;
+
+		case FF..._DONE:
+			goto done;
+
+		case FF..._MORE:
+			if (have_more_data)
+				input = ...;
+			else
+				ff..._filefinish(&writer);
+			continue;
+
+		default:
+			error(ff..._error(&writer));
+		}
+	}
+
+	done:
+	ff..._destroy(&writer);
 
 
 ## License

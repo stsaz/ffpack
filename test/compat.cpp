@@ -4,3 +4,5 @@
 #include <ffpack/gzread.h>
 #include <ffpack/gzwrite.h>
 #include <ffpack/xzread.h>
+#include <ffpack/zipread.h>
+#include <ffpack/zipwrite.h>
