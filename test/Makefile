@@ -33,6 +33,11 @@ ifeq ($(COMPILER),clang)
 	CXX := clang++ -c
 	LINKER := clang
 endif
+ifeq ($(OS),linux)
+	LD_RPATH_ORIGIN := '-Wl,-rpath,$$ORIGIN' -Wl,--disable-new-dtags
+else ifeq ($(OS),bsd)
+	LD_RPATH_ORIGIN := '-Wl,-rpath,$$ORIGIN'
+endif
 
 # set utils
 RM := rm -f
@@ -59,6 +64,7 @@ endif
 TEST_OBJ := \
 	$(OUT_DIR)/main.o \
 	$(OUT_DIR)/gz.o \
+	$(OUT_DIR)/tar.o \
 	$(OUT_DIR)/xz.o \
 	$(OUT_DIR)/zip.o \
 	$(OUT_DIR)/compat.o \
@@ -81,6 +87,7 @@ TEST_CXXFLAGS := $(TEST_CFLAGS)
 TEST_CFLAGS += -std=gnu99
 # TEST_CFLAGS += -fsanitize=address
 # TEST_LDFLAGS += -fsanitize=address
+TEST_LDFLAGS += $(LD_RPATH_ORIGIN)
 
 $(OUT_DIR)/crc.o: $(FFPACK_DIR)/crc/crc.c $(FFPACK_DIR)/test/Makefile
 	$(C) $(TEST_CFLAGS) $< -o $@
@@ -92,7 +99,8 @@ $(OUT_DIR)/%.o: $(FFPACK_DIR)/test/%.cpp $(HDR) $(FFPACK_DIR)/test/Makefile
 	$(CXX) $(TEST_CXXFLAGS) $< -o $@
 
 $(TESTER): $(TEST_OBJ)
-	$(LINKER) $(TEST_LDFLAGS) $+ \
-		$(FFPACK_DIR)/zlib/libz-ff.$(SO) $(FFPACK_DIR)/lzma/liblzma-ff.$(SO) -o $@
 	$(CP) $(FFPACK_DIR)/zlib/libz-ff.$(SO) $(OUT_DIR)/
 	$(CP) $(FFPACK_DIR)/lzma/liblzma-ff.$(SO) $(OUT_DIR)/
+	LD_LIBRARY_PATH='$(OUT_DIR)' \
+		$(LINKER) $(TEST_LDFLAGS) $+ \
+		libz-ff.$(SO) liblzma-ff.$(SO) -o $@

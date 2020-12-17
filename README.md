@@ -16,6 +16,7 @@ ffpack is a fast C library that can pack (compress) and unpack (decompress) data
 * .gz read/write (`ffpack/gzread.h`, `ffpack/gzwrite.h`).  Dependencies: libz-ff.
 * .xz read (`ffpack/xzread.h`).  Dependencies: liblzma-ff.
 * .zip read/write (`ffpack/zipread.h`, `ffpack/zipwrite.h`).  Dependencies: libz-ff.
+* .tar read/write (`ffpack/tarread.h`, `ffpack/tarwrite.h`).
 
 It doesn't contain code that reads or writes files - this is the responsibility of the user.
 
@@ -26,6 +27,7 @@ Use helper functions and structures if you want to write your own readers and wr
 * .gz format (`ffpack/gz-fmt.h`)
 * .xz format (`ffpack/xz-fmt.h`)
 * .zip format (`ffpack/zip-fmt.h`)
+* .tar format (`ffpack/tar-fmt.h`)
 
 
 ## Build dependency libraries
@@ -51,7 +53,7 @@ You should use them when compiling and linking your code with ffpack.
 	cd ffpack/test
 	make depend
 	make
-	./ffpack-test
+	./ffpack-test all
 
 
 ## How to use the reader (single-file)
