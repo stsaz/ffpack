@@ -29,7 +29,7 @@ zip_cdirtrl64_loc_read
 zip_cdirtrl64_loc_write
 */
 
-/*
+/* .zip format:
 (FILE_HDR [EXTRA...] DATA [FILE_TRL || FILE_TRL64])...
 (CDIR_ENTRY [EXTRA...])...
 [CDIR_TRL64 CDIR_TRL64_LOCATOR] CDIR_TRL

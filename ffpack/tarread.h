@@ -43,8 +43,8 @@ enum FFTARREAD_R {
 	Expecting fftarread_process() */
 	FFTARREAD_DATA,
 
-	/* Finished reading file data or the whole archive
-	Expecting fftarread_process() or fftarread_close() */
+	/* Finished reading file data
+	Expecting fftarread_process() */
 	FFTARREAD_FILEDONE,
 
 	/* Finished reading the archive

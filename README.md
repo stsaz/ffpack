@@ -156,6 +156,7 @@ You should use them when compiling and linking your code with ffpack.
 			continue;
 
 		case FF..._DONE:
+		case FF..._FILEDONE:
 			if (!need_more_files)
 				goto done;
 			ff..._fileread(&reader, file_offset);

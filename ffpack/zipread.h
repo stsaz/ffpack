@@ -69,12 +69,16 @@ enum FFZIPREAD_R {
 	FFZIPREAD_MORE,
 
 	/* Need input data at absolute file offset = ffzipread_offset()
-	Expecting ffzipread_process() with more data from the specified offset */
+	Expecting ffzipread_process() with more data at the specified offset */
 	FFZIPREAD_SEEK,
 
-	/* File info is ready - user may call ffzipread_fileinfo()
+	/* File CDIR info is ready - user may call ffzipread_fileinfo()
 	Expecting ffzipread_process() or ffzipread_fileread() */
 	FFZIPREAD_FILEINFO,
+
+	/* Finished reading file data
+	Expecting ffzipread_fileread() */
+	FFZIPREAD_FILEDONE,
 
 	/* Short file info from file header is ready - user may call ffzipread_fileinfo()
 	File size, CRC may not be available.
@@ -86,7 +90,7 @@ enum FFZIPREAD_R {
 	Expecting ffzipread_process() */
 	FFZIPREAD_DATA,
 
-	/* Finished reading meta data or file data
+	/* Finished reading meta data
 	Expecting ffzipread_fileread() */
 	FFZIPREAD_DONE,
 
@@ -548,7 +552,7 @@ static inline int ffzipread_process(ffzipread *z, ffstr *input, ffstr *output)
 				return FFZIPREAD_WARNING;
 			}
 			z->state = R_DONE;
-			return FFZIPREAD_DONE;
+			return FFZIPREAD_FILEDONE;
 
 		case R_DONE:
 			z->error = "nothing to do";

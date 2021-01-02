@@ -8,7 +8,7 @@ gz_trailer_read
 gz_trailer_write
 */
 
-/* Format:
+/* .gz format:
 (HEADER DATA TRAILER)...
 */
 

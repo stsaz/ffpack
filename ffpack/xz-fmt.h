@@ -8,7 +8,7 @@ xz_blkhdr_read
 xz_idx_read
 */
 
-/*
+/* .xz format:
 (STM_HDR  [(BLK_HDR  DATA  [BLK_PADDING]  [CHECK])...]  IDX  STM_FTR)...
 */
 

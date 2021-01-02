@@ -123,7 +123,6 @@ done:
 void test_zip_read(const ffvec *buf)
 {
 	struct member *m;
-	int hdr = 1;
 	int ifile = 0;
 	ffvec uncomp = {};
 	ffzipread r = {};
@@ -177,12 +176,13 @@ void test_zip_read(const ffvec *buf)
 			break;
 
 		case FFZIPREAD_DONE:
-			m = &members[ifile];
-			if (hdr) {
-				hdr = 0;
-				xieq(FF_COUNT(members), ifile);
-				ifile = 0;
-			} else {
+			xieq(FF_COUNT(members), ifile);
+			ifile = 0;
+			// fallthrough
+
+		case FFZIPREAD_FILEDONE:
+			if (rc == FFZIPREAD_FILEDONE) {
+				m = &members[ifile];
 				if (m->osize != 0) {
 					x(ffvec_eqT(&uncomp, "plain data", 10, char));
 				} else {
