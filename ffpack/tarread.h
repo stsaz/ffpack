@@ -94,7 +94,7 @@ static inline void fftarread_close(fftarread *t)
 static inline int fftarread_process(fftarread *t, ffstr *input, ffstr *output)
 {
 	enum {
-		R_INIT, R_HDR, R_LONGNAME, R_SKIP,
+		R_INIT, R_HDR, R_HDR_CONT, R_LONGNAME, R_SKIP,
 		R_DATA, R_PADDING, R_FDONE, R_FIN,
 		R_GATHER,
 	};
@@ -136,15 +136,24 @@ static inline int fftarread_process(fftarread *t, ffstr *input, ffstr *output)
 			}
 			r = tar_hdr_read(data.ptr, &t->fileinfo, namebuf);
 			if (r != 0) {
+				if (r & TAR_ESIZE) {
+					t->error = "invalid size number";
+					return FFTARREAD_ERROR;
+				}
+
 				if (r & TAR_ENUMBER)
 					t->error = "invalid number";
 				else if (r & TAR_ECHECKSUM)
 					t->error = "incorrect checksum";
-				else if (r & TAR_ESIZE)
+				else if (r & TAR_EHAVEDATA)
 					t->error = "directory or link entry must not have data";
-				return FFTARREAD_ERROR;
+				t->state = R_HDR_CONT;
+				return FFTARREAD_WARNING;
 			}
+		}
+			// fallthrough
 
+		case R_HDR_CONT:
 			switch (t->fileinfo.type) {
 			case TAR_LONG:
 				if (t->long_name) {
@@ -178,7 +187,6 @@ static inline int fftarread_process(fftarread *t, ffstr *input, ffstr *output)
 					, t->fileinfo.name.ptr, t->fileinfo.name.len, FFPATH_SIMPLE);
 
 			return FFTARREAD_FILEHEADER;
-		}
 
 		case R_LONGNAME:
 			ffstr_copy(&t->name, 4096, data.ptr, t->fileinfo.size);
@@ -204,8 +212,12 @@ static inline int fftarread_process(fftarread *t, ffstr *input, ffstr *output)
 			t->offset += output->len;
 			t->size -= output->len;
 			if (t->size == 0) {
-				t->gather_size = 512 - t->fileinfo.size % 512;
-				t->state = R_GATHER;  t->state_next = R_PADDING;
+				if ((t->fileinfo.size % 512) == 0) {
+					t->state = R_FDONE;
+				} else {
+					t->gather_size = 512 - t->fileinfo.size % 512;
+					t->state = R_GATHER;  t->state_next = R_PADDING;
+				}
 			}
 			return FFTARREAD_DATA;
 

@@ -163,7 +163,8 @@ static inline int _tar_szlen(const char *s, ffsize cap)
 enum TAR_ERR {
 	TAR_ENUMBER = 1,
 	TAR_ECHECKSUM = 2,
-	TAR_ESIZE = 4,
+	TAR_EHAVEDATA = 4,
+	TAR_ESIZE = 8,
 };
 
 /** Read header
@@ -193,7 +194,8 @@ static inline int tar_hdr_read(const char *buf, struct tar_fileinfo *f, char *fi
 
 	e |= tar_num(h->uid, sizeof(h->uid), &f->uid);
 	e |= tar_num(h->gid, sizeof(h->gid), &f->gid);
-	e |= tar_num64(h->size, sizeof(h->size), &f->size);
+	if (0 != tar_num64(h->size, sizeof(h->size), &f->size))
+		rc |= TAR_ESIZE;
 
 	ffuint64 tmval;
 	e |= tar_num64(h->mtime, sizeof(h->mtime), &tmval);
@@ -207,7 +209,7 @@ static inline int tar_hdr_read(const char *buf, struct tar_fileinfo *f, char *fi
 	case TAR_HLINK:
 	case TAR_SLINK:
 		if (f->size != 0)
-			rc |= TAR_ESIZE;
+			rc |= TAR_EHAVEDATA;
 		if (t == TAR_SLINK || t == TAR_HLINK) {
 			ffstr_set(&f->link_to, h->linkname, _tar_szlen(h->linkname, sizeof(h->linkname)));
 		}
