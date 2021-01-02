@@ -37,13 +37,13 @@ struct ffzipwrite {
 	ffuint cdir_items;
 	ffuint cdir_hdrlen;
 	z_ctx *lz;
-	ffuint lz_flush;
 	ffuint64 offset;
 	ffuint64 fhdr_offset;
 	_ffzipwrite_pack pack_func;
+	int file_fin, arc_fin;
 
 	/* If TRUE, the writer won't ask user to seek on output file */
-	ffuint non_seekable :1;
+	ffuint non_seekable;
 
 	/* Offset in seconds for the current local time (GMT+XX) */
 	int timezone_offset;
@@ -109,15 +109,13 @@ static inline ffuint64 ffzipwrite_offset(ffzipwrite *w)
 /** Input data for the current file is finished */
 static inline void ffzipwrite_filefinish(ffzipwrite *w)
 {
-	FF_ASSERT(w->state == 1);
-	w->lz_flush = Z_FINISH;
+	w->file_fin = 1;
 }
 
 /** All input data is finished */
 static inline void ffzipwrite_finish(ffzipwrite *w)
 {
-	FF_ASSERT(w->state == 0);
-	w->state = 6;
+	w->arc_fin = 1;
 }
 
 /** Get last error message */
@@ -131,9 +129,9 @@ static inline int _ffzipwrite_stored_pack(ffzipwrite *w, ffstr input, ffstr *out
 {
 	*rd = input.len;
 	if (input.len == 0) {
-		if (w->lz_flush == 0)
-			return FFZIPWRITE_MORE;
-		return FFZIPWRITE_DONE;
+		if (w->file_fin)
+			return FFZIPWRITE_DONE;
+		return FFZIPWRITE_MORE;
 	}
 
 	*output = input;
@@ -158,7 +156,8 @@ static inline int _ffzipwrite_deflated_init(ffzipwrite *w, ffzipwrite_conf *conf
 static inline int _ffzipwrite_deflated_pack(ffzipwrite *w, ffstr input, ffstr *output, ffsize *rd)
 {
 	*rd = input.len;
-	int r = z_deflate(w->lz, input.ptr, rd, (char*)w->buf.ptr, w->buf.cap, w->lz_flush);
+	ffuint flags = (w->file_fin) ? Z_FINISH : 0;
+	int r = z_deflate(w->lz, input.ptr, rd, (char*)w->buf.ptr, w->buf.cap, flags);
 
 	if (r == Z_DONE) {
 		if (w->lz != NULL) {
@@ -166,9 +165,11 @@ static inline int _ffzipwrite_deflated_pack(ffzipwrite *w, ffstr input, ffstr *o
 			w->lz = NULL;
 		}
 		return FFZIPWRITE_DONE;
+
 	} else if (r < 0) {
 		w->error = "z_deflate";
 		return FFZIPWRITE_ERROR;
+
 	} else if (r == 0) {
 		return FFZIPWRITE_MORE;
 	}
@@ -184,7 +185,7 @@ static inline int _ffzipwrite_deflated_pack(ffzipwrite *w, ffstr input, ffstr *o
 static inline int ffzipwrite_fileadd(ffzipwrite *w, ffzipwrite_conf *conf)
 {
 	int rc = -1;
-	if (w->state != 0)
+	if (w->state != 0) // W_FHDR
 		return -1;
 
 	int dir = (conf->attr_win & 0x10) || (conf->attr_unix & 0040000);
@@ -287,13 +288,17 @@ static inline int ffzipwrite_process(ffzipwrite *w, ffstr *input, ffstr *output)
 {
 	int r;
 	enum {
-		W_FHDR, W_DATA = 1, W_FHDR_UPDATE, W_END_SEEK, W_FTRL, W_FDONE, W_CDIR = 6, W_DONE,
+		W_FHDR = 0, W_DATA, W_FHDR_UPDATE, W_END_SEEK, W_FTRL, W_FDONE, W_CDIR, W_DONE,
 	};
 
 	for (;;) {
 		switch (w->state) {
 
 		case W_FHDR:
+			if (w->arc_fin) {
+				w->state = W_CDIR;
+				continue;
+			}
 			if (w->buf.len == 0) {
 				w->error = "file info isn't ready";
 				return FFZIPWRITE_ERROR;
@@ -361,7 +366,7 @@ static inline int ffzipwrite_process(ffzipwrite *w, ffstr *input, ffstr *output)
 			return FFZIPWRITE_DATA; // file trailer data
 
 		case W_FDONE:
-			w->lz_flush = 0;
+			w->file_fin = 0;
 			w->state = W_FHDR;
 			return FFZIPWRITE_FILEDONE;
 

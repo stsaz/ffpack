@@ -21,6 +21,7 @@ typedef struct fftarwrite {
 	const char *error;
 	ffvec buf;
 	ffuint64 fsize, fsize_hdr;
+	int file_fin, arc_fin;
 } fftarwrite;
 
 typedef struct tar_fileinfo fftarwrite_conf;
@@ -53,15 +54,13 @@ static inline void fftarwrite_init(fftarwrite *w)
 /** Input data for the current file is finished */
 static inline void fftarwrite_filefinish(fftarwrite *w)
 {
-	FF_ASSERT(w->state == 2); // W_DATA
-	w->state = 3; // W_PADDING
+	w->file_fin = 1;
 }
 
 /** All input data is finished */
 static inline void fftarwrite_finish(fftarwrite *w)
 {
-	FF_ASSERT(w->state == 0);
-	w->state = 10; // W_FOOTER
+	w->arc_fin = 1;
 }
 
 /** Get last error message */
@@ -116,14 +115,18 @@ static inline void fftarwrite_destroy(fftarwrite *w)
 static inline int fftarwrite_process(fftarwrite *w, ffstr *input, ffstr *output)
 {
 	enum {
-		W_NEWFILE = 0, W_HDR = 1, W_DATA = 2, W_PADDING = 3, W_FDONE,
-		W_FOOTER = 10, W_DONE,
+		W_NEWFILE = 0, W_HDR = 1, W_DATA, W_PADDING, W_FDONE,
+		W_FOOTER, W_DONE,
 	};
 	ffsize n;
 
 	for (;;) {
 		switch (w->state) {
 		case W_NEWFILE:
+			if (w->arc_fin) {
+				w->state = W_FOOTER;
+				continue;
+			}
 			w->error = "not ready";
 			return FFTARWRITE_ERROR;
 
@@ -134,8 +137,13 @@ static inline int fftarwrite_process(fftarwrite *w, ffstr *input, ffstr *output)
 			return FFTARWRITE_DATA;
 
 		case W_DATA:
-			if (input->len == 0)
+			if (input->len == 0) {
+				if (w->file_fin) {
+					w->state = W_PADDING;
+					continue;
+				}
 				return FFTARWRITE_MORE;
+			}
 			ffstr_set2(output, input);
 			input->len = 0;
 			w->fsize += output->len;
@@ -156,6 +164,7 @@ static inline int fftarwrite_process(fftarwrite *w, ffstr *input, ffstr *output)
 				w->error = "actual data size doesn't match the size in header";
 				return FFTARWRITE_ERROR;
 			}
+			w->file_fin = 0;
 			w->state = W_NEWFILE;
 			return FFTARWRITE_FILEDONE;
 
