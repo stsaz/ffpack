@@ -6,6 +6,34 @@
 
 #include <ffbase/string.h>
 
+/** Split into path and name so that "foo" is a name without path */
+static inline ffssize _ffpack_path_splitpath_unix(const char *fn, ffsize len, ffstr *dir, ffstr *name)
+{
+	ffssize slash = ffs_rfindchar(fn, len, '/');
+	if (slash < 0) {
+		if (dir != NULL)
+			dir->len = 0;
+		if (name != NULL)
+			ffstr_set(name, fn, len);
+		return -1;
+	}
+	return ffs_split(fn, len, slash, dir, name);
+}
+
+/** Split into name and extension so that ".foo" is a name without extension */
+static inline ffssize _ffpack_path_splitname(const char *fn, ffsize len, ffstr *name, ffstr *ext)
+{
+	ffssize dot = ffs_rfindchar(fn, len, '.');
+	if (dot <= 0) {
+		if (name != NULL)
+			ffstr_set(name, fn, len);
+		if (ext != NULL)
+			ext->len = 0;
+		return 0;
+	}
+	return ffs_split(fn, len, dot, name, ext);
+}
+
 enum FFPATH_NORM {
 	FFPATH_SLASH_ONLY = 1, // split path by slash (default on UNIX)
 	FFPATH_SLASH_BACKSLASH = 2, // split path by both slash and backslash (default on Windows)

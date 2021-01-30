@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 extern void test_gz();
+extern void test_iso();
 extern void test_tar();
 extern void test_xz();
 extern void test_zip();
@@ -17,6 +18,7 @@ struct test {
 #define T(nm) { #nm, &test_ ## nm }
 static const struct test atests[] = {
 	T(gz),
+	T(iso),
 	T(tar),
 	T(xz),
 	T(zip),

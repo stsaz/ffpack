@@ -62,8 +62,9 @@ ifeq ($(OS),win)
 endif
 
 TEST_OBJ := \
-	$(OUT_DIR)/main.o \
 	$(OUT_DIR)/gz.o \
+	$(OUT_DIR)/iso.o \
+	$(OUT_DIR)/main.o \
 	$(OUT_DIR)/tar.o \
 	$(OUT_DIR)/xz.o \
 	$(OUT_DIR)/zip.o \
