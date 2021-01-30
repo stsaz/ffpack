@@ -79,6 +79,8 @@ static inline int _tar_num(const char *d, ffsize len, void *dst, ffuint f)
 	ffstr skip = FFSTR_INITN(" \0", 2);
 	ffstr_skipany(&s, &skip);
 	ffstr_rskipany(&s, &skip);
+	if (s.len == 0)
+		ffstr_setz(&s, "0");
 	return !ffstr_toint(&s, dst, FFS_INTOCTAL | f);
 }
 
