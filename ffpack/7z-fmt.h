@@ -816,7 +816,7 @@ static int z7_names_read(ffvec *folders, ffstr *d)
 			ffstr_shift(d, n);
 			_ff7zread_log(_ff7z_log_param, 0, " folder#%L name[%L](%L):%*s"
 				, ifo, i, cnt, (ffsize)r - 1, a.ptr);
-			a.len = _ffpack_path_normalize((char*)a.ptr, a.cap, (char*)a.ptr, r - 1, FFPATH_FORCE_SLASH | FFPATH_SIMPLE);
+			a.len = _ffpack_path_normalize((char*)a.ptr, a.cap, (char*)a.ptr, r - 1, _FFPACK_PATH_FORCE_SLASH | _FFPACK_PATH_SIMPLE);
 			((char*)a.ptr)[a.len] = '\0';
 
 			if (fo_empty != NULL && ffbit_array_test(fo_empty->empty.ptr, cnt)) {

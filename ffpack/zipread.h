@@ -186,7 +186,7 @@ static inline int _ffzipread_fn_copy(ffzipread *z, ffstr fn)
 
 	z->fileinfo.name.len = _ffpack_path_normalize(z->fileinfo.name.ptr, z->fileinfo.name.len
 		, z->fileinfo.name.ptr, z->fileinfo.name.len
-		, FFPATH_FORCE_SLASH | FFPATH_SIMPLE);
+		, _FFPACK_PATH_FORCE_SLASH | _FFPACK_PATH_SIMPLE);
 	return 0;
 }
 

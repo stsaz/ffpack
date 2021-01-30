@@ -34,28 +34,28 @@ static inline ffssize _ffpack_path_splitname(const char *fn, ffsize len, ffstr *
 	return ffs_split(fn, len, dot, name, ext);
 }
 
-enum FFPATH_NORM {
-	FFPATH_SLASH_ONLY = 1, // split path by slash (default on UNIX)
-	FFPATH_SLASH_BACKSLASH = 2, // split path by both slash and backslash (default on Windows)
-	FFPATH_FORCE_SLASH = 4, // convert '\\' to '/'
-	FFPATH_FORCE_BACKSLASH = 8, // convert '/' to '\\'
+enum _FFPACK_PATH_NORM {
+	_FFPACK_PATH_SLASH_ONLY = 1, // split path by slash (default on UNIX)
+	_FFPACK_PATH_SLASH_BACKSLASH = 2, // split path by both slash and backslash (default on Windows)
+	_FFPACK_PATH_FORCE_SLASH = 4, // convert '\\' to '/'
+	_FFPACK_PATH_FORCE_BACKSLASH = 8, // convert '/' to '\\'
 
-	FFPATH_SIMPLE = 0x10, // convert to a simple path: {/abc, ./abc, ../abc} -> abc
+	_FFPACK_PATH_SIMPLE = 0x10, // convert to a simple path: {/abc, ./abc, ../abc} -> abc
 
 	/* Handle disk drive letter, e.g. 'C:\' (default on Windows)
 	C:/../a -> C:/a
-	C:/a -> a (FFPATH_SIMPLE) */
-	FFPATH_DISK_LETTER = 0x20,
-	FFPATH_NO_DISK_LETTER = 0x40, // disable auto FFPATH_DISK_LETTER on Windows
+	C:/a -> a (_FFPACK_PATH_SIMPLE) */
+	_FFPACK_PATH_DISK_LETTER = 0x20,
+	_FFPACK_PATH_NO_DISK_LETTER = 0x40, // disable auto _FFPACK_PATH_DISK_LETTER on Windows
 };
 
 /** Normalize file path
-flags: enum FFPATH_NORM
+flags: enum _FFPACK_PATH_NORM
 Default behaviour:
   * split path by slash (on UNIX), by both slash and backslash (on Windows)
-    override by FFPATH_SLASH_BACKSLASH or FFPATH_SLASH_ONLY
+    override by _FFPACK_PATH_SLASH_BACKSLASH or _FFPACK_PATH_SLASH_ONLY
   * handle disk drive letter on Windows, e.g. 'C:\'
-    override by FFPATH_DISK_LETTER or FFPATH_NO_DISK_LETTER
+    override by _FFPACK_PATH_DISK_LETTER or _FFPACK_PATH_NO_DISK_LETTER
   * skip "." components, unless leading
     ./a/b -> ./a/b
     a/./b -> a/b
@@ -71,16 +71,16 @@ static inline ffssize _ffpack_path_normalize(char *dst, ffsize cap, const char *
 	ffsize k = 0;
 	ffstr s, part;
 	ffstr_set(&s, src, len);
-	int simplify = !!(flags & FFPATH_SIMPLE);
-	int skip_disk = (flags & (FFPATH_DISK_LETTER | FFPATH_SIMPLE)) == (FFPATH_DISK_LETTER | FFPATH_SIMPLE);
+	int simplify = !!(flags & _FFPACK_PATH_SIMPLE);
+	int skip_disk = (flags & (_FFPACK_PATH_DISK_LETTER | _FFPACK_PATH_SIMPLE)) == (_FFPACK_PATH_DISK_LETTER | _FFPACK_PATH_SIMPLE);
 
-	const char *slashes = (flags & FFPATH_SLASH_BACKSLASH) ? "/\\" : "/";
+	const char *slashes = (flags & _FFPACK_PATH_SLASH_BACKSLASH) ? "/\\" : "/";
 #ifdef FF_WIN
-	if ((flags & (FFPATH_SLASH_BACKSLASH | FFPATH_SLASH_ONLY)) == 0)
+	if ((flags & (_FFPACK_PATH_SLASH_BACKSLASH | _FFPACK_PATH_SLASH_ONLY)) == 0)
 		slashes = "/\\";
 
-	if ((flags & (FFPATH_DISK_LETTER | FFPATH_NO_DISK_LETTER)) == 0)
-		flags |= FFPATH_DISK_LETTER;
+	if ((flags & (_FFPACK_PATH_DISK_LETTER | _FFPACK_PATH_NO_DISK_LETTER)) == 0)
+		flags |= _FFPACK_PATH_DISK_LETTER;
 #endif
 
 	while (s.len != 0) {
@@ -115,7 +115,7 @@ static inline ffssize _ffpack_path_normalize(char *dst, ffsize cap, const char *
 						// "../" -> "../../"
 					} else if (k == 1) {
 						continue; // "/" -> "/"
-					} else if ((flags & FFPATH_DISK_LETTER)
+					} else if ((flags & _FFPACK_PATH_DISK_LETTER)
 						&& *ffstr_last(&prev) == ':') {
 						continue; // "c:/" -> "c:/"
 					} else {
@@ -134,7 +134,7 @@ static inline ffssize _ffpack_path_normalize(char *dst, ffsize cap, const char *
 					}
 				}
 
-			} else if (flags & FFPATH_SIMPLE) {
+			} else if (flags & _FFPACK_PATH_SIMPLE) {
 				continue;
 			}
 		}
@@ -145,9 +145,9 @@ static inline ffssize _ffpack_path_normalize(char *dst, ffsize cap, const char *
 		k += part.len;
 
 		if (pos >= 0) {
-			if (flags & FFPATH_FORCE_SLASH)
+			if (flags & _FFPACK_PATH_FORCE_SLASH)
 				dst[k] = '/';
-			else if (flags & FFPATH_FORCE_BACKSLASH)
+			else if (flags & _FFPACK_PATH_FORCE_BACKSLASH)
 				dst[k] = '\\';
 			else
 				dst[k] = s2[pos];

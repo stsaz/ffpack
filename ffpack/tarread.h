@@ -184,7 +184,7 @@ static inline int fftarread_process(fftarread *t, ffstr *input, ffstr *output)
 
 			if (1)
 				t->fileinfo.name.len = _ffpack_path_normalize(t->fileinfo.name.ptr, t->fileinfo.name.len
-					, t->fileinfo.name.ptr, t->fileinfo.name.len, FFPATH_SIMPLE);
+					, t->fileinfo.name.ptr, t->fileinfo.name.len, _FFPACK_PATH_SIMPLE);
 
 			return FFTARREAD_FILEHEADER;
 

@@ -193,7 +193,7 @@ static inline int ffzipwrite_fileadd(ffzipwrite *w, ffzipwrite_conf *conf)
 	ffstr name = {};
 	if (NULL == ffstr_alloc(&name, conf->name.len + 1))
 		return -1;
-	name.len = _ffpack_path_normalize(name.ptr, conf->name.len, conf->name.ptr, conf->name.len, FFPATH_FORCE_SLASH | FFPATH_SIMPLE);
+	name.len = _ffpack_path_normalize(name.ptr, conf->name.len, conf->name.ptr, conf->name.len, _FFPACK_PATH_FORCE_SLASH | _FFPACK_PATH_SIMPLE);
 	if (name.len != 0 && dir) {
 		if (name.ptr[name.len - 1] != '/')
 			name.ptr[name.len++] = '/';

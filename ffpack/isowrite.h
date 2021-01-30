@@ -696,7 +696,7 @@ static inline int ffisowrite_fileadd(ffisowrite *w, const struct iso_file *f)
 		w->err = ISO_EMEM;
 		goto err;
 	}
-	fn.len = _ffpack_path_normalize(fn.ptr, f->name.len, f->name.ptr, f->name.len, FFPATH_FORCE_SLASH | FFPATH_SIMPLE);
+	fn.len = _ffpack_path_normalize(fn.ptr, f->name.len, f->name.ptr, f->name.len, _FFPACK_PATH_FORCE_SLASH | _FFPACK_PATH_SIMPLE);
 
 	_ffpack_path_splitpath_unix(fn.ptr, fn.len, &path, &name);
 	parent = _ffisowrite_dir_find(w, &path);
