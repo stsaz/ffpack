@@ -20,6 +20,7 @@ However, dependent libraries must be built into `.so/.dll`, because ffpack doesn
 * .gz read/write (`ffpack/gzread.h`, `ffpack/gzwrite.h`).  Dependencies: libz-ff.
 * .xz read (`ffpack/xzread.h`).  Dependencies: liblzma-ff.
 * .zip read/write (`ffpack/zipread.h`, `ffpack/zipwrite.h`).  Dependencies: libz-ff.
+* .7z read/write (`ffpack/7zread.h`).  Dependencies: liblzma-ff, libz-ff.
 * .tar read/write (`ffpack/tarread.h`, `ffpack/tarwrite.h`).
 * .iso read/write (`ffpack/isoread.h`, `ffpack/isowrite.h`)
 
@@ -32,6 +33,7 @@ Use helper functions and structures if you want to write your own readers and wr
 * .gz format (`ffpack/gz-fmt.h`)
 * .xz format (`ffpack/xz-fmt.h`)
 * .zip format (`ffpack/zip-fmt.h`)
+* .7z format (`ffpack/7z-fmt.h`)
 * .tar format (`ffpack/tar-fmt.h`)
 * .iso format (`ffpack/iso-fmt.h`)
 
