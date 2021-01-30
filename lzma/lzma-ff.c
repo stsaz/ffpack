@@ -129,6 +129,8 @@ end:
 
 void lzma_decode_free(lzma_decoder *dec)
 {
+	if (dec == NULL)
+		return;
 	lzma_next_end(&dec->blk_dec, NULL);
 	free(dec);
 }

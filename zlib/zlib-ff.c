@@ -125,6 +125,8 @@ int z_inflate_init(z_ctx **pz, z_conf *conf)
 
 void z_inflate_free(z_ctx *z)
 {
+	if (z == NULL)
+		return;
 	inflateEnd(&z->stm);
 	free(z);
 }
