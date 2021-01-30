@@ -2,10 +2,8 @@
 2020, Simon Zolin */
 
 /*
-gz_header_read
-gz_header_write
-gz_trailer_read
-gz_trailer_write
+gz_header_read	gz_header_write
+gz_trailer_read	gz_trailer_write
 */
 
 /* .gz format:

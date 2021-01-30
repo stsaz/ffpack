@@ -2,11 +2,9 @@
 2020, Simon Zolin */
 
 /*
-tar_num64 tar_num
-tar_num_write
+tar_num64 tar_num tar_num_write
 tar_checksum
-tar_hdr_read
-tar_hdr_write
+tar_hdr_read tar_hdr_write
 */
 
 /* .tar format:

@@ -3,30 +3,18 @@
 
 /*
 zip_extra_next
-zip_extra_cdir64_read
-zip_extra_fhdr64_read
-zip_extra_cdir64_write
-zip_extra_fhdr64_write
-zip_extra_newunix_read
-zip_extra_newunix_write
-zip_extra_unixtime_read
-zip_extra_unixtime_write
+zip_extra_cdir64_read	zip_extra_cdir64_write
+zip_extra_fhdr64_read	zip_extra_fhdr64_write
+zip_extra_newunix_read	zip_extra_newunix_write
+zip_extra_unixtime_read	zip_extra_unixtime_write
 zip_extra_ntfs_read
-zip_filehdr_write
-zip_filehdr_read
+zip_filehdr_read	zip_filehdr_write
 zip_filetrl_read
-zip_filetrl64_read
-zip_filetrl64_write
-zip_cdir_write
-zip_cdir_finishwrite
-zip_cdir_read
-zip_cdirtrl_write
-zip_cdirtrl_find
-zip_cdirtrl_read
-zip_cdirtrl64_read
-zip_cdirtrl64_write
-zip_cdirtrl64_loc_read
-zip_cdirtrl64_loc_write
+zip_filetrl64_read	zip_filetrl64_write
+zip_cdir_read	zip_cdir_write	zip_cdir_finishwrite
+zip_cdirtrl_read	zip_cdirtrl_find	zip_cdirtrl_write
+zip_cdirtrl64_read	zip_cdirtrl64_write
+zip_cdirtrl64_loc_read	zip_cdirtrl64_loc_write
 */
 
 /* .zip format:
