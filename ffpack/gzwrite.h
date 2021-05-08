@@ -5,7 +5,7 @@
 ffgzwrite_init
 ffgzwrite_destroy
 ffgzwrite_process
-ffgzwrite_finish
+ffgzwrite_finish ffgzwrite_flush
 ffgzwrite_error
 */
 
@@ -57,6 +57,12 @@ static int ffgzwrite_process(ffgzwrite *w, ffstr *input, ffstr *output);
 static inline void ffgzwrite_finish(ffgzwrite *w)
 {
 	w->lz_flush = Z_FINISH;
+}
+
+/** Flush output data */
+static inline void ffgzwrite_flush(ffgzwrite *w)
+{
+	w->lz_flush = Z_SYNC_FLUSH;
 }
 
 /** Get last error message */
