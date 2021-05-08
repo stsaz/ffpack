@@ -189,7 +189,8 @@ static inline int fftarread_process(fftarread *t, ffstr *input, ffstr *output)
 			return FFTARREAD_FILEHEADER;
 
 		case R_LONGNAME:
-			ffstr_copy(&t->name, 4096, data.ptr, t->fileinfo.size);
+			r = _ffsz_nlen(data.ptr, t->fileinfo.size);
+			ffstr_copy(&t->name, 4096, data.ptr, r);
 			t->fileinfo.name = t->name;
 			t->state = R_GATHER;  t->state_next = R_HDR;
 			continue;
