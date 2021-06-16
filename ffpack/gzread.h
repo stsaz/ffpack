@@ -138,7 +138,7 @@ static inline int ffgzread_process(ffgzread *r, ffstr *input, ffstr *output)
 	enum {
 		R_BEGIN, R_GATHER, R_GATHER_STRZ, R_TRL,
 		R_HDR, R_HDR_FIELD, R_EXTRA_SIZE, R_EXTRA, R_NAME, R_COMMENT, R_HDRCRC,
-		R_LZ_INIT, R_DATA, R_TRL_FIN,
+		R_LZ_INIT, R_DATA, R_TRL_FIN, R_FIN,
 	};
 	for (;;) {
 		switch (r->state) {
@@ -316,12 +316,16 @@ static inline int ffgzread_process(ffgzread *r, ffstr *input, ffstr *output)
 			ffuint uncompressed_size;
 			gz_trailer_read(data.ptr, &r->info.uncompressed_crc, &uncompressed_size);
 
+			r->state = R_FIN;
 			if (r->crc != r->info.uncompressed_crc) {
 				r->error = "computed CRC doesn't match CRC from trailer";
 				return FFGZREAD_WARNING;
 			}
-			return FFGZREAD_DONE;
 		}
+		// fallthrough
+
+		case R_FIN:
+			return FFGZREAD_DONE;
 
 		default:
 			FF_ASSERT(0);
