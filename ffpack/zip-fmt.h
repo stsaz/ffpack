@@ -31,6 +31,7 @@ zip_cdirtrl64_loc_read	zip_cdirtrl64_loc_write
 enum ZIP_COMP {
 	ZIP_STORED = 0,
 	ZIP_DEFLATED = 8,
+	ZIP_ZSTANDARD = 93,
 };
 
 struct zip_fileinfo {

@@ -11,6 +11,7 @@ extern void test_iso();
 extern void test_tar();
 extern void test_xz();
 extern void test_zip();
+extern void test_zstd();
 
 struct test {
 	const char *name;
@@ -24,6 +25,7 @@ static const struct test atests[] = {
 	T(tar),
 	T(xz),
 	T(zip),
+	T(zstd),
 };
 #undef T
 

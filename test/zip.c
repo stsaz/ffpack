@@ -15,12 +15,14 @@ struct member {
 	ffuint compress_method;
 	ffuint uid, gid;
 	ffuint offset;
+	ffuint compsize;
 };
 static struct member members[] = {
-	{ "file-deflated", 10, 1234567890, 0x20,0100000, ZIP_DEFLATED, 1,2, 0, },
-	{ "file-stored", 10, 1234567890, 0x20,0100000, ZIP_STORED, 1,2, 0, },
-	{ "file-empty", 0, 1234567891, 0x20,0100000, ZIP_STORED, 1,2, 0, },
-	{ "dir/", 0, 1234567892, 0x10,0040000, ZIP_STORED, 1,2, 0, },
+	{ "file-deflated", 10, 1234567890, 0x20,0100000, ZIP_DEFLATED, 1,2, 0,0 },
+	{ "file-zstd", 10, 1234567890, 0x20,0100000, ZIP_ZSTANDARD, 1,2, 0,0 },
+	{ "file-stored", 10, 1234567890, 0x20,0100000, ZIP_STORED, 1,2, 0,0 },
+	{ "file-empty", 0, 1234567891, 0x20,0100000, ZIP_STORED, 1,2, 0,0 },
+	{ "dir/", 0, 1234567892, 0x10,0040000, ZIP_STORED, 1,2, 0,0 },
 };
 
 static char* plaindata[] = { "plain ", "data" };
@@ -149,8 +151,9 @@ void test_zip_read(const ffvec *buf)
 			xieq(m->compress_method, info->compress_method);
 			xieq(m->uid, info->uid);
 			xieq(m->gid, info->gid);
-			m->offset = info->hdr_offset;
 			xieq(m->osize, info->uncompressed_size);
+			m->offset = info->hdr_offset;
+			m->compsize = info->compressed_size;
 			ifile++;
 			break;
 		}
@@ -196,7 +199,7 @@ void test_zip_read(const ffvec *buf)
 			}
 
 			m = &members[ifile];
-			ffzipread_fileread(&r, m->offset, (m->compress_method == ZIP_STORED) ? m->osize : 0);
+			ffzipread_fileread(&r, m->offset, m->compsize);
 			break;
 
 		default:

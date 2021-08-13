@@ -1,5 +1,5 @@
 /** ffpack: .zip writer
-* compression: stored, deflated
+* compression: stored, deflated, zstandard
 * supports unseekable output device (via zip local file trailer)
 
 2020, Simon Zolin */
@@ -19,6 +19,7 @@ ffzipwrite_error
 #include <ffpack/zip-fmt.h>
 #include <ffpack/path.h>
 #include <zlib/zlib-ff.h>
+#include <zstd/zstd-ff.h>
 #include <ffbase/string.h>
 #include <ffbase/vector.h>
 
@@ -37,6 +38,7 @@ struct ffzipwrite {
 	ffuint cdir_items;
 	ffuint cdir_hdrlen;
 	z_ctx *lz;
+	zstd_encoder *zstd;
 	ffuint64 offset;
 	ffuint64 fhdr_offset;
 	_ffzipwrite_pack pack_func;
@@ -52,6 +54,8 @@ struct ffzipwrite {
 typedef struct ffzipwrite_conf {
 	int deflate_level; // 0:default
 	int deflate_mem; // 0:default
+	int zstd_level; // 0:default
+	ffuint zstd_workers;
 
 	ffstr name;
 	fftime mtime; // seconds since 1970
@@ -130,27 +134,40 @@ static inline int _ffzipwrite_stored_pack(ffzipwrite *w, ffstr input, ffstr *out
 	*rd = input.len;
 	if (input.len == 0) {
 		if (w->file_fin)
-			return FFZIPWRITE_DONE;
-		return FFZIPWRITE_MORE;
+			return 0xa11;
+		return 0xfeed;
 	}
 
 	*output = input;
-	return FFZIPWRITE_DATA;
+	return 0;
 }
+
 
 static int _ffzipwrite_deflated_pack(ffzipwrite *w, ffstr input, ffstr *output, ffsize *rd);
 
 static inline int _ffzipwrite_deflated_init(ffzipwrite *w, ffzipwrite_conf *conf)
 {
-	z_conf zconf = {};
-	zconf.level = conf->deflate_level;
-	zconf.mem = conf->deflate_mem;
-	if (0 != z_deflate_init(&w->lz, &zconf)) {
-		w->error = "z_deflate_init()";
-		return -1;
+	if (w->lz == NULL) {
+		z_conf zconf = {};
+		zconf.level = conf->deflate_level;
+		zconf.mem = conf->deflate_mem;
+		if (0 != z_deflate_init(&w->lz, &zconf)) {
+			w->error = "z_deflate_init()";
+			return -1;
+		}
+	} else {
+		z_deflate_reset(w->lz);
 	}
 	w->pack_func = _ffzipwrite_deflated_pack;
 	return 0;
+}
+
+static void _ffzipw_deflated_close(ffzipwrite *w)
+{
+	if (w->lz != NULL) {
+		z_deflate_free(w->lz);
+		w->lz = NULL;
+	}
 }
 
 static inline int _ffzipwrite_deflated_pack(ffzipwrite *w, ffstr input, ffstr *output, ffsize *rd)
@@ -160,25 +177,74 @@ static inline int _ffzipwrite_deflated_pack(ffzipwrite *w, ffstr input, ffstr *o
 	int r = z_deflate(w->lz, input.ptr, rd, (char*)w->buf.ptr, w->buf.cap, flags);
 
 	if (r == Z_DONE) {
-		if (w->lz != NULL) {
-			z_deflate_free(w->lz);
-			w->lz = NULL;
-		}
-		return FFZIPWRITE_DONE;
+		return 0xa11;
 
 	} else if (r < 0) {
 		w->error = "z_deflate";
-		return FFZIPWRITE_ERROR;
+		return 0xbad;
 
 	} else if (r == 0) {
-		return FFZIPWRITE_MORE;
+		return 0xfeed;
 	}
 
 	w->buf.len += r;
 	ffstr_set2(output, &w->buf);
 	w->buf.len = 0;
-	return FFZIPWRITE_DATA;
+	return 0;
 }
+
+
+static int _ffzipw_zstd_pack(ffzipwrite *w, ffstr input, ffstr *output, ffsize *rd);
+
+static int _ffzipw_zstd_init(ffzipwrite *w, ffzipwrite_conf *conf)
+{
+	zstd_enc_conf zconf = {};
+	zconf.level = conf->zstd_level;
+	zconf.workers = conf->zstd_workers;
+	if (0 != zstd_encode_init(&w->zstd, &zconf)) {
+		w->error = "zstd_encode_init()";
+		return -1;
+	}
+	w->pack_func = _ffzipw_zstd_pack;
+	return 0;
+}
+
+static void _ffzipw_zstd_close(ffzipwrite *w)
+{
+	if (w->zstd != NULL) {
+		zstd_encode_free(w->zstd);
+		w->zstd = NULL;
+	}
+}
+
+static int _ffzipw_zstd_pack(ffzipwrite *w, ffstr input, ffstr *output, ffsize *rd)
+{
+	ffuint flags = (w->file_fin) ? ZSTD_FFINISH : 0;
+	zstd_buf in, out;
+	zstd_buf_set(&in, input.ptr, input.len);
+	zstd_buf_set(&out, w->buf.ptr, w->buf.cap);
+	int r = zstd_encode(w->zstd, &in, &out, flags);
+	*rd = in.pos;
+
+	if (r < 0) {
+		w->error = "zstd_encode";
+		return 0xbad;
+	}
+	if (out.pos == 0) {
+		if (w->file_fin && in.pos == input.len) {
+			zstd_encode_free(w->zstd);
+			w->zstd = NULL;
+			return 0xa11;
+		}
+		return 0xfeed;
+	}
+
+	w->buf.len = out.pos;
+	ffstr_set2(output, &w->buf);
+	w->buf.len = 0;
+	return 0;
+}
+
 
 #define _FFZIPWRITE_BUFCAP  (64*1024)
 
@@ -250,6 +316,11 @@ static inline int ffzipwrite_fileadd(ffzipwrite *w, ffzipwrite_conf *conf)
 			return -1;
 		break;
 
+	case ZIP_ZSTANDARD:
+		if (0 != _ffzipw_zstd_init(w, conf))
+			return -1;
+		break;
+
 	default:
 		w->pack_func = NULL;
 	}
@@ -263,10 +334,8 @@ end:
 
 static inline void ffzipwrite_destroy(ffzipwrite *w)
 {
-	if (w->lz != NULL) {
-		z_deflate_free(w->lz);
-		w->lz = NULL;
-	}
+	_ffzipw_deflated_close(w);
+	_ffzipw_zstd_close(w);
 	ffvec_free(&w->cdir);
 	ffvec_free(&w->buf);
 	ffvec_free(&w->fhdr_buf);
@@ -322,7 +391,11 @@ static inline int ffzipwrite_process(ffzipwrite *w, ffstr *input, ffstr *output)
 			w->file_rd += rd;
 			w->total_rd += rd;
 
-			if (r == FFZIPWRITE_DONE) {
+			switch (r) {
+			case 0xfeed:
+				return FFZIPWRITE_MORE;
+
+			case 0xa11:
 				zip_cdir_finishwrite(ffslice_endT(&w->cdir, char), w->file_rd, w->file_wr, w->crc);
 				w->cdir.len += w->cdir_hdrlen;
 				w->cdir_items++;
@@ -335,8 +408,11 @@ static inline int ffzipwrite_process(ffzipwrite *w, ffstr *input, ffstr *output)
 				w->offset = w->fhdr_offset;
 				return FFZIPWRITE_SEEK; // seek back to file header
 
-			} else if (r != FFZIPWRITE_DATA) {
-				return r;
+			case 0:
+				break;
+
+			case 0xbad:
+				return FFZIPWRITE_ERROR;
 			}
 
 			w->file_wr += output->len;

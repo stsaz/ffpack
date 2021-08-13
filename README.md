@@ -23,6 +23,9 @@ However, dependent libraries must be built into `.so/.dll`, because ffpack doesn
 * .7z read/write (`ffpack/7zread.h`).  Dependencies: liblzma-ff, libz-ff.
 * .tar read/write (`ffpack/tarread.h`, `ffpack/tarwrite.h`).
 * .iso read/write (`ffpack/isoread.h`, `ffpack/isowrite.h`)
+* lzma decompress (`zstd/lzma-ff.h`)
+* zlib compress/decompress (`zlib/zlib-ff.h`)
+* zstd compress/decompress (`zstd/zstd-ff.h`)
 
 It doesn't contain code that reads or writes files - this is the responsibility of the user.
 
@@ -40,7 +43,7 @@ Use helper functions and structures if you want to write your own readers and wr
 
 ## Build dependency libraries
 
-There are scripts to automatically download and build the required dependency libraries (libz-ff, liblzma-ff from these official packages: zlib, xz).
+There are scripts to automatically download and build the required dependency libraries (based on these official packages: xz, zlib, zstd).
 
 	git clone https://github.com/stsaz/ffpack
 	cd ffpack/test
@@ -50,6 +53,7 @@ This command will create these files:
 
 	lzma/liblzma-ff.so
 	zlib/libz-ff.so
+	zstd/libzstd-ffpack.so
 
 You should use them when compiling and linking your code with ffpack.
 

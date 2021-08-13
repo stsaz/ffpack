@@ -1,5 +1,5 @@
 /** ffpack: .zip reader
-* compression: stored, deflated
+* compression: stored, deflated, zstandard
 * CRC check
 * doesn't support encryption, multi-disk archives
 
@@ -20,6 +20,7 @@ ffzipread_fileread
 #include <ffpack/path.h>
 #include <ffpack/zip-fmt.h>
 #include <zlib/zlib-ff.h>
+#include <zstd/zstd-ff.h>
 #include <ffbase/vector.h>
 #include <ffbase/string.h>
 
@@ -38,9 +39,11 @@ struct ffzipread {
 	ffuint64 file_rd, file_wr;
 	ffuint crc; // current CRC
 	z_ctx *lz;
+	zstd_decoder *zstd;
 	ffzipread_fileinfo_t fileinfo;
 	_ffzipread_unpack unpack_func;
 	ffuint64 file_comp_size;
+	char *error_buf;
 	ffuint have_ftrl :1;
 	ffuint zip64_ftrl :1;
 
@@ -133,6 +136,11 @@ static inline void ffzipread_fileread(ffzipread *z, ffuint64 hdr_offset, ffuint6
 	z->file_comp_size = comp_size;
 }
 
+static int _ffzipread_deflated_unpack(ffzipread *z, ffstr input, ffstr *output, ffsize *rd);
+static void _ffzipr_deflated_close(ffzipread *z);
+static int _ffzipr_zstd_unpack(ffzipread *z, ffstr input, ffstr *output, ffsize *rd);
+static void _ffzipr_zstd_close(ffzipread *z);
+
 static inline int ffzipread_open(ffzipread *z, ffint64 total_size)
 {
 	ffmem_zero_obj(z);
@@ -148,10 +156,9 @@ static inline void ffzipread_close(ffzipread *z)
 {
 	ffvec_free(&z->buf);
 	ffstr_free(&z->fileinfo.name);
-	if (z->lz != NULL) {
-		z_inflate_free(z->lz);
-		z->lz = NULL;
-	}
+	_ffzipr_deflated_close(z);
+	_ffzipr_zstd_close(z);
+	ffmem_free(z->error_buf);  z->error_buf = NULL;
 }
 
 static inline void _ffzipread_log(ffzipread *z, ffuint level, const char *fmt, ...)
@@ -233,34 +240,43 @@ static inline int _ffzipread_extra(ffzipread *z, const void *cdir_data, const vo
 /** Fast CRC32 implementation using 8k table */
 FF_EXTERN ffuint crc32(const void *buf, ffsize size, ffuint crc);
 
+
 static inline int _ffzipread_stored_unpack(ffzipread *z, ffstr input, ffstr *output, ffsize *rd)
 {
-	*rd = 0;
-	if (z->file_rd == z->file_comp_size)
-		return FFZIPREAD_DONE;
-	if (input.len == 0)
-		return FFZIPREAD_MORE;
-	*rd = ffmin(input.len, z->file_comp_size - z->file_rd);
+	(void)z;
+	if (input.len == 0) {
+		if (*rd == 0)
+			return 0xa11;
+		*rd = 0;
+		return 0xfeed;
+	}
+	*rd = input.len;
 	ffstr_set(output, input.ptr, *rd);
-	return FFZIPREAD_DATA;
+	return 0;
 }
 
-static int _ffzipread_deflated_unpack(ffzipread *z, ffstr input, ffstr *output, ffsize *rd);
 
 static inline int _ffzipread_deflated_init(ffzipread *z)
+{
+	if (z->lz == NULL) {
+		z_conf zconf = {};
+		if (0 != z_inflate_init(&z->lz, &zconf)) {
+			z->error = "z_inflate_init()";
+			return FFZIPREAD_ERROR;
+		}
+	} else {
+		z_inflate_reset(z->lz);
+	}
+	z->unpack_func = _ffzipread_deflated_unpack;
+	return 0;
+}
+
+static void _ffzipr_deflated_close(ffzipread *z)
 {
 	if (z->lz != NULL) {
 		z_inflate_free(z->lz);
 		z->lz = NULL;
 	}
-
-	z_conf zconf = {};
-	if (0 != z_inflate_init(&z->lz, &zconf)) {
-		z->error = "z_inflate_init()";
-		return FFZIPREAD_ERROR;
-	}
-	z->unpack_func = _ffzipread_deflated_unpack;
-	return 0;
 }
 
 static inline int _ffzipread_deflated_unpack(ffzipread *z, ffstr input, ffstr *output, ffsize *rd)
@@ -269,21 +285,69 @@ static inline int _ffzipread_deflated_unpack(ffzipread *z, ffstr input, ffstr *o
 	ffssize r = z_inflate(z->lz, input.ptr, rd, (char*)z->buf.ptr, z->buf.cap, 0);
 
 	if (r == 0) {
-		return FFZIPREAD_MORE;
+		return 0xfeed;
 
 	} else if (r == Z_DONE) {
-		return FFZIPREAD_DONE;
+		return 0xa11;
 
 	} else if (r < 0) {
 		z->error = "z_inflate()";
-		return FFZIPREAD_ERROR;
+		return 0xbad;
 	}
 
 	z->buf.len += r;
 	ffstr_set2(output, &z->buf);
 	z->buf.len = 0;
-	return FFZIPREAD_DATA;
+	return 0;
 }
+
+
+static int _ffzipr_zstd_init(ffzipread *z)
+{
+	zstd_dec_conf zconf = {};
+	if (0 != zstd_decode_init(&z->zstd, &zconf)) {
+		z->error = "zstd_decode_init";
+		return FFZIPREAD_ERROR;
+	}
+	z->unpack_func = _ffzipr_zstd_unpack;
+	return 0;
+}
+
+static void _ffzipr_zstd_close(ffzipread *z)
+{
+	if (z->zstd != NULL) {
+		zstd_decode_free(z->zstd);
+		z->zstd = NULL;
+	}
+}
+
+static int _ffzipr_zstd_unpack(ffzipread *z, ffstr input, ffstr *output, ffsize *rd)
+{
+	int done = (*rd == 0);
+	zstd_buf in, out;
+	zstd_buf_set(&in, input.ptr, input.len);
+	zstd_buf_set(&out, z->buf.ptr, z->buf.cap);
+	int r = zstd_decode(z->zstd, &in, &out);
+	*rd = in.pos;
+
+	if (r < 0) {
+		ffmem_free(z->error_buf);
+		z->error_buf = ffsz_allocfmt("zstd_decode: %s", zstd_error(r));
+		z->error = z->error_buf;
+		return 0xbad;
+	}
+	if (out.pos == 0) {
+		if (done)
+			return 0xa11;
+		return 0xfeed;
+	}
+
+	z->buf.len = out.pos;
+	ffstr_set2(output, &z->buf);
+	z->buf.len = 0;
+	return 0;
+}
+
 
 /* .zip read:
 . find CDIR trailer at file end, get CDIR offset
@@ -473,6 +537,12 @@ static inline int ffzipread_process(ffzipread *z, ffstr *input, ffstr *output)
 				}
 				break;
 
+			case ZIP_ZSTANDARD:
+				if (0 != _ffzipr_zstd_init(z)) {
+					return FFZIPREAD_ERROR;
+				}
+				break;
+
 			default:
 				z->error = "unsupported compression method";
 				return FFZIPREAD_ERROR;
@@ -508,27 +578,40 @@ static inline int ffzipread_process(ffzipread *z, ffstr *input, ffstr *output)
 		}
 
 		case R_DATA: {
-			ffsize rd;
-			r = z->unpack_func(z, *input, output, &rd);
+			ffstr in;
+			ffstr_set(&in, input->ptr, ffmin(input->len, z->file_comp_size - z->file_rd));
+			ffsize rd = z->file_comp_size - z->file_rd;
+			r = z->unpack_func(z, in, output, &rd);
 			ffstr_shift(input, rd);
 			z->offset += rd;
 			z->file_rd += rd;
 
-			if (r == FFZIPREAD_DONE) {
+			switch (r) {
+			case 0xfeed:
+				if (z->file_rd == z->file_comp_size)
+					return z->error = "reached the end of file data",  FFZIPREAD_ERROR;
+				return FFZIPREAD_MORE;
+
+			case 0xa11:
+				if (z->file_rd != z->file_comp_size)
+					return z->error = "unprocessed file data",  FFZIPREAD_ERROR;
+
+				z->state = R_FILEDONE;
 				if (z->have_ftrl) {
+					z->gather_size = 4 + sizeof(struct zip_filetrl);
+					z->state = R_GATHER;  z->state_next = R_FTRL;
 					if (z->zip64_ftrl) {
 						z->gather_size = 4 + sizeof(struct zip64_filetrl);
 						z->state = R_GATHER;  z->state_next = R_FTRL64;
-					} else {
-						z->gather_size = 4 + sizeof(struct zip_filetrl);
-						z->state = R_GATHER;  z->state_next = R_FTRL;
 					}
-				} else {
-					z->state = R_FILEDONE;
 				}
+				continue;
+
+			case 0:
 				break;
-			} else if (r != FFZIPREAD_DATA) {
-				return r;
+
+			case 0xbad:
+				return FFZIPREAD_ERROR;
 			}
 
 			z->crc = crc32((void*)output->ptr, output->len, z->crc);
