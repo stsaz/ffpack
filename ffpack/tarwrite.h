@@ -86,13 +86,15 @@ static inline int fftarwrite_fileadd(fftarwrite *w, fftarwrite_conf *conf)
 			name.ptr[name.len++] = '/';
 	}
 
+	struct tar_fileinfo info = *conf;
+	info.name = name;
 	w->fsize_hdr = conf->size;
 
 	int r;
-	r = tar_hdr_write(NULL, conf);
+	r = tar_hdr_write(NULL, &info);
 	if (NULL == ffvec_reallocT(&w->buf, r, char))
 		goto end;
-	r = tar_hdr_write(w->buf.ptr, conf);
+	r = tar_hdr_write(w->buf.ptr, &info);
 	if (r < 0) {
 		w->error = "tar_filehdr_write";
 		goto end;
