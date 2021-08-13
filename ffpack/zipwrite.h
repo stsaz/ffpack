@@ -69,7 +69,9 @@ Auto naming:
   * dir -> dir/
   * { /a, ./a, ../a } -> a
   * c:\a\b -> a/b (Windows)
-Return 0 on success */
+Return 0 on success
+  <0 on error
+  -2 if normalized file name is empty (.e.g. for "/" or "." or "..") */
 static int ffzipwrite_fileadd(ffzipwrite *w, ffzipwrite_conf *conf);
 
 /** Close writer */
@@ -250,6 +252,8 @@ static int _ffzipw_zstd_pack(ffzipwrite *w, ffstr input, ffstr *output, ffsize *
 
 static inline int ffzipwrite_fileadd(ffzipwrite *w, ffzipwrite_conf *conf)
 {
+	struct zip_fileinfo info = {};
+	int comp_method;
 	int rc = -1;
 	if (w->state != 0) // W_FHDR
 		return -1;
@@ -260,12 +264,13 @@ static inline int ffzipwrite_fileadd(ffzipwrite *w, ffzipwrite_conf *conf)
 	if (NULL == ffstr_alloc(&name, conf->name.len + 1))
 		return -1;
 	name.len = _ffpack_path_normalize(name.ptr, conf->name.len, conf->name.ptr, conf->name.len, _FFPACK_PATH_FORCE_SLASH | _FFPACK_PATH_SIMPLE);
-	if (name.len != 0 && dir) {
-		if (name.ptr[name.len - 1] != '/')
-			name.ptr[name.len++] = '/';
+	if (name.len == 0) {
+		rc = -2;
+		goto end;
 	}
+	if (dir && name.ptr[name.len - 1] != '/')
+		name.ptr[name.len++] = '/';
 
-	struct zip_fileinfo info = {};
 	info.name = name;
 	info.mtime = conf->mtime;
 	info.attr_win = conf->attr_win;
@@ -275,7 +280,7 @@ static inline int ffzipwrite_fileadd(ffzipwrite *w, ffzipwrite_conf *conf)
 	if (w->non_seekable)
 		info.compressed_size = (ffuint64)-1;
 
-	int comp_method = (dir) ? ZIP_STORED : conf->compress_method;
+	comp_method = (dir) ? ZIP_STORED : conf->compress_method;
 	info.compress_method = (enum ZIP_COMP)comp_method;
 	info.hdr_offset = w->total_wr;
 

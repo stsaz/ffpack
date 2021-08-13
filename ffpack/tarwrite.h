@@ -69,22 +69,32 @@ static inline const char* fftarwrite_error(fftarwrite *w)
 	return w->error;
 }
 
+/** Prepare for writing the next file
+Auto naming:
+  * dir -> dir/
+  * { /a, ./a, ../a } -> a
+  * c:\a\b -> a/b (Windows)
+Return 0 on success
+  <0 on error
+  -2 if normalized file name is empty (.e.g. for "/" or "." or "..") */
 static inline int fftarwrite_fileadd(fftarwrite *w, fftarwrite_conf *conf)
 {
 	int rc = -1;
 	if (w->state != 0) // W_NEWFILE
 		return -1;
 
-	int dir = (conf->attr_unix & 0040000);
+	int dir = !!(conf->attr_unix & 0040000);
 
 	ffstr name = {};
 	if (NULL == ffstr_alloc(&name, conf->name.len + 1))
 		return -1;
 	name.len = _ffpack_path_normalize(name.ptr, conf->name.len, conf->name.ptr, conf->name.len, _FFPACK_PATH_FORCE_SLASH | _FFPACK_PATH_SIMPLE);
-	if (name.len != 0 && dir) {
-		if (name.ptr[name.len - 1] != '/')
-			name.ptr[name.len++] = '/';
+	if (name.len == 0) {
+		rc = -2;
+		goto end;
 	}
+	if (dir && name.ptr[name.len - 1] != '/')
+		name.ptr[name.len++] = '/';
 
 	struct tar_fileinfo info = *conf;
 	info.name = name;
