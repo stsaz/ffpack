@@ -171,6 +171,7 @@ static inline int fftarread_process(fftarread *t, ffstr *input, ffstr *output)
 
 			case TAR_EXTHDR:
 			case TAR_NEXTHDR:
+				t->size = 512;
 				t->gather_size = 512;
 				t->state = R_GATHER;  t->state_next = R_SKIP;
 				continue;
