@@ -6,13 +6,12 @@ ffpack code is header-only (`.h`-only) and doesn't need to be built into `.a/.so
 However, dependent libraries must be built into `.so/.dll`, because ffpack doesn't implement compression algorithms itself.
 
 * Features
-* Build dependency libraries
-* Test
 * How to use
 * How to use the reader (single-file)
 * How to use the writer (single-file)
 * How to use the reader (multi-file)
 * How to use the writer (multi-file)
+* Test
 
 
 ## Features
@@ -41,23 +40,6 @@ Use helper functions and structures if you want to write your own readers and wr
 * .iso format (`ffpack/iso-fmt.h`)
 
 
-## Build dependency libraries
-
-There are scripts to automatically download and build the required dependency libraries (based on these official packages: xz, zlib, zstd).
-
-	git clone https://github.com/stsaz/ffpack
-	cd ffpack/test
-	make depend
-
-This command will create these files:
-
-	lzma/liblzma-ff.so
-	zlib/libz-ff.so
-	zstd/libzstd-ffpack.so
-
-You should use them when compiling and linking your code with ffpack.
-
-
 ## How to use
 
 1. Clone repos:
@@ -65,17 +47,34 @@ You should use them when compiling and linking your code with ffpack.
 		$ git clone https://github.com/stsaz/ffbase
 		$ git clone https://github.com/stsaz/ffpack
 
-2. Build dependent libraries:
+2. Build dependent libraries.
 
-		cd ffpack/test
-		make depend
+	There are scripts to automatically download and build the required dependency libraries (based on these official packages: xz, zlib, zstd).
+
+		cd ffpack
+		make libs
+
+	This command will create these files:
+
+		lzma/liblzma-ff.so
+		zlib/libz-ff.so
+		zstd/libzstd-ffpack.so
+
+	You may copy these files into your project directory.
 
 3. In your build script:
 
+	Compiler flags:
+
 		-IFFBASE_DIR -IFFPACK_DIR
 
-where `FFBASE_DIR` is your ffbase/ directory,
-and `FFPACK_DIR` is your ffpack/ directory.
+	Linker flags:
+
+		-LLIBS_DIR -llzma-ff -lz-ff -lzstd-ffpack
+
+	where `FFBASE_DIR` is your ffbase/ directory,
+	`FFPACK_DIR` is your ffpack/ directory,
+	and `LIBS_DIR` is the directory with compression libraries.
 
 4. And then just use the necessary files:
 
@@ -260,7 +259,7 @@ and `FFPACK_DIR` is your ffpack/ directory.
 	git clone https://github.com/stsaz/ffbase
 	git clone https://github.com/stsaz/ffpack
 	cd ffpack/test
-	make depend
+	make libs
 	make
 	./ffpack-test all
 

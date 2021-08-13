@@ -18,16 +18,18 @@ static struct file contents[] = {
 	{ "mydirectory", ISO_FILE_DIR, "" },
 	{ "zfilename.txt", 0, "data-zfilename" },
 	{ "mydirectory/file3.txt", 0, "data-file3" },
+	{ "mydirectory/dir2", ISO_FILE_DIR, "" },
+	{ "mydirectory/dir2/file4.txt", 0, "data-file4" },
 };
 
-static void test_iso_write(ffvec *data)
+static void test_iso_write(ffvec *data, ffuint flags)
 {
 	ffisowrite o = {};
 	ffuint64 off;
 	int r;
 	ffstr in, out;
 
-	xieq(0, ffisowrite_create(&o, "test", 0));
+	xieq(0, ffisowrite_create(&o, "test", flags));
 
 	// prepare meta
 	for (int ifile = 0;  ifile != FF_COUNT(contents);  ifile++) {
@@ -150,6 +152,8 @@ static void test_iso_read(ffvec *data, ffuint opt)
 			break;
 
 		default:
+			fflog("ffisoread_process: %s @%x"
+				, ffisoread_error(&iso), (int)ffisoread_offset(&iso));
 			x(0);
 		}
 	}
@@ -162,9 +166,18 @@ void test_iso()
 {
 	ffvec data = {};
 
-	test_iso_write(&data);
+	test_iso_write(&data, 0);
+	// file_writeall("/tmp/1.iso", data.ptr, data.len);
+	test_iso_read(&data, 0);
 	test_iso_read(&data, FFISOREAD_NO_JOLIET);
 	test_iso_read(&data, FFISOREAD_NO_RR);
+	ffvec_free(&data);
 
+	test_iso_write(&data, FFISOWRITE_NO_JOLIET);
+	test_iso_read(&data, 0);
+	ffvec_free(&data);
+
+	test_iso_write(&data, FFISOWRITE_NO_RR);
+	test_iso_read(&data, 0);
 	ffvec_free(&data);
 }

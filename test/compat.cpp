@@ -8,3 +8,6 @@
 #include <ffpack/xzread.h>
 #include <ffpack/zipread.h>
 #include <ffpack/zipwrite.h>
+#include <lzma/lzma-ff.h>
+#include <zlib/zlib-ff.h>
+#include <zstd/zstd-ff.h>

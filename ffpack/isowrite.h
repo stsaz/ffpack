@@ -46,8 +46,8 @@ typedef struct ffisowrite {
 } ffisowrite;
 
 enum FFISOWRITE_OPT {
-	FFISOWRITE_NO_JOLIET = 1, // don't parse Joliet extensions
-	FFISOWRITE_NO_RR = 2, // don't parse RR extensions
+	FFISOWRITE_NO_JOLIET = 1, // don't write Joliet extensions
+	FFISOWRITE_NO_RR = 2, // don't write RR extensions
 };
 
 #define ffisowrite_offset(w)  ((w)->off)
@@ -111,7 +111,7 @@ static int _ffisowrite_mapdir_keyeq(void *opaque, const void *key, ffsize keylen
 }
 
 /**
-flags: enum FFISO_OPT
+flags: enum FFISOWRITE_OPT
 Return 0 on success */
 static inline int ffisowrite_create(ffisowrite *w, const char *name, ffuint flags)
 {

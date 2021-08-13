@@ -4,54 +4,7 @@
 VER := 5.2.4
 URL := https://tukaani.org/xz/xz-$(VER).tar.xz
 
-# set OS
-ifndef $(OS)
-	uname := $(shell uname)
-	ifeq ($(uname),Linux)
-		OS := linux
-	else ifeq ($(uname),FreeBSD)
-		OS := freebsd
-	else ifeq ($(uname),Darwin)
-		OS := apple
-	else
-		OS := win
-	endif
-endif
-
-# set compiler
-CPREFIX :=
-# CPREFIX := x86_64-w64-mingw32-
-COMPILER := gcc
-ifeq ($(OS),freebsd)
-	COMPILER := clang
-endif
-ifeq ($(OS),apple)
-	COMPILER := clang
-endif
-C := $(CPREFIX)gcc -c
-CXX := $(CPREFIX)g++ -c
-LINKER := $(CPREFIX)gcc
-ifeq ($(COMPILER),clang)
-	C := clang -c
-	CXX := clang++ -c
-	LINKER := clang
-endif
-LD_INSTNAME_LDRPATH :=
-ifeq ($(OS),apple)
-	LD_INSTNAME_LDRPATH = -Wl,-install_name -Wl,@loader_path/$@
-endif
-
-# set utils
-WGET := wget
-RM := rm -rfv
-CP := cp -u
-SO := so
-ifeq ($(OS),win)
-	SO := dll
-else ifeq ($(OS),apple)
-	SO := dylib
-endif
-UNTAR_XZ := tar xJf
+include ../makeconf
 
 all: xz-$(VER)/config.h
 	make -rR liblzma-ff.$(SO)
@@ -67,7 +20,7 @@ xz-$(VER): xz-$(VER).tar.xz
 
 # configure
 CONFIGURE_ARGS :=
-ifneq ($(CPREFIX),)
+ifneq ($(CROSS_PREFIX),)
 	CONFIGURE_ARGS += --host=x86_64-w64-mingw32
 endif
 
@@ -164,7 +117,7 @@ CFLAGS := -I. -Ixz-$(VER) \
 	-Wstrict-prototypes -Wold-style-definition -Wmissing-prototypes -Wmissing-declarations -Wmissing-noreturn -Wredundant-decls \
 	-O3 -flto -fvisibility=hidden -fno-asynchronous-unwind-tables -fpic -pthread
 
-LDFLAGS := $(LD_INSTNAME_LDRPATH) -shared -s
+LDFLAGS := $(LINK_INSTALLNAME_LOADERPATH) -shared -s
 
 lzma-ff.o: lzma-ff.c
 	$(C) $(CFLAGS) $< -o$@
@@ -172,18 +125,19 @@ lzma-ff.o: lzma-ff.c
 xz-$(VER)/src/common/%.o: xz-$(VER)/src/common/%.c
 	$(C) $(CFLAGS) $< -o$@
 
-xz-$(VER)/src/liblzma/%.o: xz-$(VER)/src/liblzma/%.c \
-		$(wildcard xz-$(VER)/src/liblzma/check/*.h) \
-		$(wildcard xz-$(VER)/src/liblzma/common/*.h) \
-		$(wildcard xz-$(VER)/src/liblzma/delta/*.h) \
-		$(wildcard xz-$(VER)/src/liblzma/lz/*.h) \
-		$(wildcard xz-$(VER)/src/liblzma/lzma/*.h) \
-		$(wildcard xz-$(VER)/src/liblzma/rangecoder/*.h) \
-		$(wildcard xz-$(VER)/src/liblzma/simple/*.h)
-	$(C) $(CFLAGS) $< -o$@
+HEADERS := $(wildcard xz-$(VER)/src/liblzma/check/*.h) \
+	$(wildcard xz-$(VER)/src/liblzma/common/*.h) \
+	$(wildcard xz-$(VER)/src/liblzma/delta/*.h) \
+	$(wildcard xz-$(VER)/src/liblzma/lz/*.h) \
+	$(wildcard xz-$(VER)/src/liblzma/lzma/*.h) \
+	$(wildcard xz-$(VER)/src/liblzma/rangecoder/*.h) \
+	$(wildcard xz-$(VER)/src/liblzma/simple/*.h)
+
+xz-$(VER)/src/liblzma/%.o: xz-$(VER)/src/liblzma/%.c $(HEADERS)
+	$(C) $(CFLAGS) $< -o $@
 
 liblzma-ff.$(SO): $(OBJ)
-	$(LINKER) $(OBJ) $(LDFLAGS) -o$@
+	$(LINK) $(LDFLAGS) $+ -o $@
 
 clean:
 	$(RM) $(OBJ) xz-$(VER)

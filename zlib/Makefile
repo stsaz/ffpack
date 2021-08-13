@@ -4,54 +4,7 @@
 VER := 1.2.11
 URL := https://www.zlib.net/zlib-$(VER).tar.xz
 
-# set OS
-ifndef $(OS)
-	uname := $(shell uname)
-	ifeq ($(uname),Linux)
-		OS := linux
-	else ifeq ($(uname),FreeBSD)
-		OS := freebsd
-	else ifeq ($(uname),Darwin)
-		OS := apple
-	else
-		OS := win
-	endif
-endif
-
-# set compiler
-CPREFIX :=
-# CPREFIX := x86_64-w64-mingw32-
-COMPILER := gcc
-ifeq ($(OS),freebsd)
-	COMPILER := clang
-endif
-ifeq ($(OS),apple)
-	COMPILER := clang
-endif
-C := $(CPREFIX)gcc -c
-CXX := $(CPREFIX)g++ -c
-LINKER := $(CPREFIX)gcc
-ifeq ($(COMPILER),clang)
-	C := clang -c
-	CXX := clang++ -c
-	LINKER := clang
-endif
-LD_INSTNAME_LDRPATH :=
-ifeq ($(OS),apple)
-	LD_INSTNAME_LDRPATH = -Wl,-install_name -Wl,@loader_path/$@
-endif
-
-# set utils
-WGET := wget
-RM := rm -rfv
-CP := cp -u
-SO := so
-ifeq ($(OS),win)
-	SO := dll
-else ifeq ($(OS),apple)
-	SO := dylib
-endif
-UNTAR_XZ := tar xJf
+include ../makeconf
 
 all: zlib-$(VER)
 	make -rR libz-ff.$(SO)
@@ -83,16 +36,16 @@ ifneq ($(OS),win)
 	CFLAGS += -DHAVE_HIDDEN
 endif
 
-LDFLAGS := $(LD_INSTNAME_LDRPATH) -shared -s
+LDFLAGS := $(LINK_INSTALLNAME_LOADERPATH) -shared -s
 
 zlib-ff.o: zlib-ff.c $(wildcard *.h)
-	$(C) -I. $(CFLAGS) $< -o$@
+	$(C) -I. $(CFLAGS) $< -o $@
 
 %.o: zlib-$(VER)/%.c
-	$(C) $(CFLAGS) $< -o$@
+	$(C) $(CFLAGS) $< -o $@
 
 libz-ff.$(SO): $(OBJ)
-	$(LINKER) $(OBJ) $(LDFLAGS) -o$@
+	$(LINK) $(LDFLAGS) $+ -o $@
 
 clean:
 	$(RM) $(OBJ) zlib-$(VER)
