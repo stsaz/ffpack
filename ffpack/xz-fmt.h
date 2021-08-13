@@ -169,7 +169,7 @@ static int xz_blkhdr_read(const void *buf, ffsize len, lzma_filter_props *filts,
 	}
 
 	ffuint padding = d.len - 4;
-	if (padding >= 4 || !!ffmem_cmp(d.ptr, "\x00\x00\x00", padding)) {
+	if (!!ffmem_cmp(d.ptr, "\x00\x00\x00", ffmin(padding, 3))) {
 		*error = "bad block header";
 		return -1;
 	}
