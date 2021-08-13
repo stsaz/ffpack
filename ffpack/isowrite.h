@@ -697,6 +697,8 @@ static inline int ffisowrite_fileadd(ffisowrite *w, const struct iso_file *f)
 		goto err;
 	}
 	fn.len = _ffpack_path_normalize(fn.ptr, f->name.len, f->name.ptr, f->name.len, _FFPACK_PATH_FORCE_SLASH | _FFPACK_PATH_SIMPLE);
+	if (fn.len != 0 && *ffstr_last(&fn) == '/')
+		fn.len--;
 
 	_ffpack_path_splitpath_unix(fn.ptr, fn.len, &path, &name);
 	parent = _ffisowrite_dir_find(w, &path);
@@ -711,7 +713,7 @@ static inline int ffisowrite_fileadd(ffisowrite *w, const struct iso_file *f)
 			w->err = ISO_EMEM;
 			goto err;
 		}
-		d->name_off = path.len;
+		d->name_off = (path.len != 0) ? path.len+1 : 0;
 		d->parent_dir = i;
 		parent = ffslice_itemT(&w->dirs, d->parent_dir, struct _ffiso_dir);
 		d->ifile = parent->files.len;

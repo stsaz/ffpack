@@ -173,7 +173,7 @@ static void iso_write16(ffbyte *dst, ffuint val)
 static void iso_writename(void *dst, ffsize cap, const char *s)
 {
 	ffuint n = _ffs_copyz((char*)dst, cap, s);
-	ffmem_fill(dst, ' ', cap - n);
+	ffmem_fill(&((char*)dst)[n], ' ', cap - n);
 }
 
 static void iso_writename16(void *dst, ffsize cap, const char *s)
