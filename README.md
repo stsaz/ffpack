@@ -83,6 +83,7 @@ Use helper functions and structures if you want to write your own readers and wr
 
 ## How to use the reader (single-file)
 
+```C
 	ff... obj = {}
 	ff..._config conf = {};
 	conf.setting = value;
@@ -116,10 +117,11 @@ Use helper functions and structures if you want to write your own readers and wr
 
 	done:
 	ff..._close(&obj);
-
+```
 
 ## How to use the writer (single-file)
 
+```C
 	ff... obj = {}
 	ff..._config conf = {};
 	conf.setting = value;
@@ -152,10 +154,11 @@ Use helper functions and structures if you want to write your own readers and wr
 
 	done:
 	ff..._destroy(&obj);
-
+```
 
 ## How to use the reader (multi-file)
 
+```C
 	ff... reader = {}
 	ff..._open(&reader);
 
@@ -202,10 +205,11 @@ Use helper functions and structures if you want to write your own readers and wr
 
 	done:
 	ff..._close(&reader);
-
+```
 
 ## How to use the writer (multi-file)
 
+```C
 	ff... writer = {}
 	int next_file = 1;
 
@@ -252,7 +256,7 @@ Use helper functions and structures if you want to write your own readers and wr
 
 	done:
 	ff..._destroy(&writer);
-
+```
 
 ## Test
 

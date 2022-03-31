@@ -481,9 +481,12 @@ static int _ff7zread_filters_call(ff7zread *z, ffstr *output)
 		break;
 
 	case _FF7ZR_FILT_DONE:
+		_ff7zread_log(z, 0, "filter#%u: done", z->ifilter);
 		if (z->ifilter + 1 == z->_filters.len) {
-			if (f->crc != z->crc)
+			if (f->crc != z->crc) {
+				_ff7zread_log(z, 0, "CRC mismatch: should be: %xu  computed: %xu", f->crc, z->crc);
 				return _ERR(z, Z7_EDATACRC);
+			}
 			return FF7ZREAD_FILEDONE;
 		}
 

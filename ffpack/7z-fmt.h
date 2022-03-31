@@ -658,13 +658,23 @@ static int z7_fcrcs_read(ffvec *folders, ffstr *d)
 	if (!all)
 		return Z7_EUNSUPP;
 
+	ffsize dlen = d->len;
 	struct z7_folder *fo;
 	FFSLICE_WALK(folders, fo) {
+
+		struct z7_fileinfo *f = (struct z7_fileinfo*)fo->files.ptr;
+		if (fo->files.len == 0) {
+			/* There were no 'NumUnPackStream' and no 'Size', coder is 'store': assume 1 file/folder */
+			if (NULL == ffvec_zallocT(&fo->files, 1, struct z7_fileinfo))
+				return Z7_ESYS;
+			f = (struct z7_fileinfo*)fo->files.ptr;
+			fo->files.len = 1;
+			f->size = fo->unpack_size;
+		}
 
 		if (d->len < sizeof(int) * fo->files.len)
 			return Z7_EMORE;
 
-		struct z7_fileinfo *f = (struct z7_fileinfo*)fo->files.ptr;
 		for (ffsize i = 0;  i != fo->files.len;  i++) {
 			ffuint n = ffint_le_cpu32_ptr(d->ptr);
 			ffstr_shift(d, sizeof(int));
@@ -672,6 +682,7 @@ static int z7_fcrcs_read(ffvec *folders, ffstr *d)
 		}
 	}
 
+	_ff7zread_log(_ff7z_log_param, 0, "  crc array: %L", dlen - d->len);
 	return 0;
 }
 
