@@ -2,6 +2,12 @@
 * compression: stored, deflated, zstandard
 * supports unseekable output device (via zip local file trailer)
 
+Building:
+Define FFPACK_ZIPWRITE_ZLIB, FFPACK_ZIPWRITE_ZSTD, FFPACK_ZIPWRITE_CRC32
+ to use zlib/zstd/crc32 third-party code referenced by ffpack.
+Otherwise, you must provide your own implementation for CRC32 filter
+ and for deflate/zstandard filters (for deflate/zstd compression methods).
+
 2020, Simon Zolin */
 
 /*
@@ -18,14 +24,11 @@ ffzipwrite_error
 
 #include <ffpack/zip-fmt.h>
 #include <ffpack/path.h>
-#include <zlib/zlib-ff.h>
-#include <zstd/zstd-ff.h>
 #include <ffbase/string.h>
 #include <ffbase/vector.h>
 
+typedef struct ffzipwrite_filter ffzipwrite_filter;
 typedef struct ffzipwrite ffzipwrite;
-typedef int (*_ffzipwrite_pack)(ffzipwrite *z, ffstr input, ffstr *output, ffsize *rd);
-
 struct ffzipwrite {
 	ffuint state;
 	const char *error;
@@ -37,23 +40,29 @@ struct ffzipwrite {
 	ffuint crc; // current CRC of uncompressed data
 	ffuint cdir_items;
 	ffuint cdir_hdrlen;
-	z_ctx *lz;
-	zstd_encoder *zstd;
 	ffuint64 offset;
 	ffuint64 fhdr_offset;
-	_ffzipwrite_pack pack_func;
 	int file_fin, arc_fin;
+
+	struct {
+		const ffzipwrite_filter *iface;
+		void *obj;
+	} filters[2];
+	ffuint filter_cur;
 
 	/* If TRUE, the writer won't ask user to seek on output file */
 	ffuint non_seekable;
 
 	/* Offset in seconds for the current local time (GMT+XX) */
 	int timezone_offset;
+
+	void *udata;
 };
 
 typedef struct ffzipwrite_conf {
 	int deflate_level; // 0:default
 	int deflate_mem; // 0:default
+
 	int zstd_level; // 0:default
 	ffuint zstd_workers;
 
@@ -62,7 +71,15 @@ typedef struct ffzipwrite_conf {
 	ffuint attr_win, attr_unix; // Windows/UNIX file attributes
 	ffuint uid, gid; // UNIX user/group ID
 	enum ZIP_COMP compress_method;
+	const ffzipwrite_filter *compress_filter;
+	const ffzipwrite_filter *crc32_filter;
 } ffzipwrite_conf;
+
+struct ffzipwrite_filter {
+	void* (*open)(ffzipwrite *w, ffzipwrite_conf *conf);
+	void (*close)(void *obj, ffzipwrite *w);
+	int (*process)(void *obj, ffzipwrite *w, ffstr *input, ffstr *output);
+};
 
 /** Prepare for writing the next file
 Auto naming:
@@ -101,12 +118,19 @@ enum FFZIPWRITE_R {
 	FFZIPWRITE_ERROR,
 };
 
+#ifdef FFPACK_ZIPWRITE_ZLIB
+	#include <ffpack/zipwrite-libz.h>
+#endif
+#ifdef FFPACK_ZIPWRITE_ZSTD
+	#include <ffpack/zipwrite-zstd.h>
+#endif
+
 /** Write the next chunk
 output: pointer to an empty string for the output data
 Return enum FFZIPWRITE_R */
 static int ffzipwrite_process(ffzipwrite *w, ffstr *input, ffstr *output);
 
-/** Get outputput offset */
+/** Get output offset */
 static inline ffuint64 ffzipwrite_offset(ffzipwrite *w)
 {
 	return w->offset;
@@ -131,121 +155,53 @@ static inline const char* ffzipwrite_error(ffzipwrite *w)
 }
 
 
-static inline int _ffzipwrite_stored_pack(ffzipwrite *w, ffstr input, ffstr *output, ffsize *rd)
+static void* _ffzipw_stored_open(ffzipwrite *w, ffzipwrite_conf *conf)
 {
-	*rd = input.len;
-	if (input.len == 0) {
+	(void)conf;
+	return w;
+}
+
+static void _ffzipw_stored_close(void *obj, ffzipwrite *w)
+{
+	(void)obj; (void)w;
+}
+
+static int _ffzipw_stored_process(void *obj, ffzipwrite *w, ffstr *input, ffstr *output)
+{
+	(void)obj;
+	if (input->len == 0) {
 		if (w->file_fin)
 			return 0xa11;
 		return 0xfeed;
 	}
 
-	*output = input;
+	*output = *input;
+	ffstr_shift(input, input->len);
 	return 0;
 }
 
+static const ffzipwrite_filter _ffzipw_stored = {
+	_ffzipw_stored_open, _ffzipw_stored_close, _ffzipw_stored_process
+};
 
-static int _ffzipwrite_deflated_pack(ffzipwrite *w, ffstr input, ffstr *output, ffsize *rd);
 
-static inline int _ffzipwrite_deflated_init(ffzipwrite *w, ffzipwrite_conf *conf)
+#ifdef FFPACK_ZIPWRITE_CRC32
+/** Fast CRC32 implementation using 8k table */
+extern ffuint crc32(const void *buf, ffsize size, ffuint crc);
+
+static int _ffzipw_crc(void *obj, ffzipwrite *w, ffstr *input, ffstr *output)
 {
-	if (w->lz == NULL) {
-		z_conf zconf = {};
-		zconf.level = conf->deflate_level;
-		zconf.mem = conf->deflate_mem;
-		if (0 != z_deflate_init(&w->lz, &zconf)) {
-			w->error = "z_deflate_init()";
-			return -1;
-		}
-	} else {
-		z_deflate_reset(w->lz);
-	}
-	w->pack_func = _ffzipwrite_deflated_pack;
+	(void)obj;
+	*output = *input;
+	w->crc = crc32((void*)input->ptr, input->len, w->crc);
+	ffstr_shift(input, input->len);
 	return 0;
 }
 
-static void _ffzipw_deflated_close(ffzipwrite *w)
-{
-	if (w->lz != NULL) {
-		z_deflate_free(w->lz);
-		w->lz = NULL;
-	}
-}
-
-static inline int _ffzipwrite_deflated_pack(ffzipwrite *w, ffstr input, ffstr *output, ffsize *rd)
-{
-	*rd = input.len;
-	ffuint flags = (w->file_fin) ? Z_FINISH : 0;
-	int r = z_deflate(w->lz, input.ptr, rd, (char*)w->buf.ptr, w->buf.cap, flags);
-
-	if (r == Z_DONE) {
-		return 0xa11;
-
-	} else if (r < 0) {
-		w->error = "z_deflate";
-		return 0xbad;
-
-	} else if (r == 0) {
-		return 0xfeed;
-	}
-
-	w->buf.len += r;
-	ffstr_set2(output, &w->buf);
-	w->buf.len = 0;
-	return 0;
-}
-
-
-static int _ffzipw_zstd_pack(ffzipwrite *w, ffstr input, ffstr *output, ffsize *rd);
-
-static int _ffzipw_zstd_init(ffzipwrite *w, ffzipwrite_conf *conf)
-{
-	zstd_enc_conf zconf = {};
-	zconf.level = conf->zstd_level;
-	zconf.workers = conf->zstd_workers;
-	if (0 != zstd_encode_init(&w->zstd, &zconf)) {
-		w->error = "zstd_encode_init()";
-		return -1;
-	}
-	w->pack_func = _ffzipw_zstd_pack;
-	return 0;
-}
-
-static void _ffzipw_zstd_close(ffzipwrite *w)
-{
-	if (w->zstd != NULL) {
-		zstd_encode_free(w->zstd);
-		w->zstd = NULL;
-	}
-}
-
-static int _ffzipw_zstd_pack(ffzipwrite *w, ffstr input, ffstr *output, ffsize *rd)
-{
-	ffuint flags = (w->file_fin) ? ZSTD_FFINISH : 0;
-	zstd_buf in, out;
-	zstd_buf_set(&in, input.ptr, input.len);
-	zstd_buf_set(&out, w->buf.ptr, w->buf.cap);
-	int r = zstd_encode(w->zstd, &in, &out, flags);
-	*rd = in.pos;
-
-	if (r < 0) {
-		w->error = "zstd_encode";
-		return 0xbad;
-	}
-	if (out.pos == 0) {
-		if (w->file_fin && in.pos == input.len) {
-			zstd_encode_free(w->zstd);
-			w->zstd = NULL;
-			return 0xa11;
-		}
-		return 0xfeed;
-	}
-
-	w->buf.len = out.pos;
-	ffstr_set2(output, &w->buf);
-	w->buf.len = 0;
-	return 0;
-}
+static const ffzipwrite_filter _ffzipw_crc32 = {
+	NULL, NULL, _ffzipw_crc
+};
+#endif
 
 
 #define _FFZIPWRITE_BUFCAP  (64*1024)
@@ -310,26 +266,48 @@ static inline int ffzipwrite_fileadd(ffzipwrite *w, ffzipwrite_conf *conf)
 	}
 	w->cdir_hdrlen = r;
 
+#ifdef FFPACK_ZIPWRITE_CRC32
+	w->filters[0].iface = &_ffzipw_crc32;
+#else
+	FF_ASSERT(conf->crc32_filter != NULL);
+#endif
+
+	if (conf->crc32_filter != NULL)
+		w->filters[0].iface = conf->crc32_filter;
+
+	if (w->filters[1].iface != NULL) {
+		w->filters[1].iface->close(w->filters[1].obj, w);
+		w->filters[1].obj = NULL;
+		w->filters[1].iface = NULL;
+	}
+
 	switch (comp_method) {
 
 	case ZIP_STORED:
-		w->pack_func = _ffzipwrite_stored_pack;
+		w->filters[1].iface = &_ffzipw_stored;
 		break;
 
+#ifdef FFPACK_ZIPWRITE_ZLIB
 	case ZIP_DEFLATED:
-		if (0 != _ffzipwrite_deflated_init(w, conf))
-			return -1;
+		w->filters[1].iface = &_ffzipw_deflated;
 		break;
+#endif
 
+#ifdef FFPACK_ZIPWRITE_ZSTD
 	case ZIP_ZSTANDARD:
-		if (0 != _ffzipw_zstd_init(w, conf))
-			return -1;
+		w->filters[1].iface = &_ffzipw_zstd;
 		break;
+#endif
 
 	default:
-		w->pack_func = NULL;
+		FF_ASSERT(conf->compress_filter != NULL);
+		w->filters[1].iface = conf->compress_filter;
 	}
 
+	if (NULL == (w->filters[1].obj = w->filters[1].iface->open(w, conf)))
+		return -1;
+
+	w->filter_cur = 0;
 	rc = 0;
 
 end:
@@ -339,15 +317,14 @@ end:
 
 static inline void ffzipwrite_destroy(ffzipwrite *w)
 {
-	_ffzipw_deflated_close(w);
-	_ffzipw_zstd_close(w);
+	if (w->filters[1].iface != NULL) {
+		w->filters[1].iface->close(w->filters[1].obj, w);
+		w->filters[1].obj = NULL;
+	}
 	ffvec_free(&w->cdir);
 	ffvec_free(&w->buf);
 	ffvec_free(&w->fhdr_buf);
 }
-
-/** Fast CRC32 implementation using 8k table */
-extern ffuint crc32(const void *buf, ffsize size, ffuint crc);
 
 /* .zip write:
 for each new file:
@@ -388,16 +365,22 @@ static inline int ffzipwrite_process(ffzipwrite *w, ffstr *input, ffstr *output)
 			return FFZIPWRITE_DATA; // file header data
 
 		case W_DATA: {
-			ffsize rd;
-			r = w->pack_func(w, *input, output, &rd);
+			if (w->filter_cur == 0) {
+				w->filters[0].iface->process(w->filters[0].obj, w, input, output);
+				*input = *output;
+				w->filter_cur = 1;
+				continue;
+			}
 
-			w->crc = crc32((void*)input->ptr, rd, w->crc);
-			ffstr_shift(input, rd);
+			ffsize rd = input->len;
+			r = w->filters[1].iface->process(w->filters[1].obj, w, input, output);
+			rd -= input->len;
 			w->file_rd += rd;
 			w->total_rd += rd;
 
 			switch (r) {
 			case 0xfeed:
+				w->filter_cur = 0;
 				return FFZIPWRITE_MORE;
 
 			case 0xa11:

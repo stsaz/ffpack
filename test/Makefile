@@ -51,6 +51,9 @@ crc.o: $(FFPACK_DIR)/crc/crc.c $(FFPACK_DIR)/test/Makefile
 %.o: $(FFPACK_DIR)/test/%.c $(HEADERS) $(FFPACK_DIR)/test/Makefile
 	$(C) $(TEST_CFLAGS) $< -o $@
 
+zip.o: $(FFPACK_DIR)/test/zip.c $(HEADERS) $(FFPACK_DIR)/test/Makefile
+	$(C) $(TEST_CFLAGS) -DFFPACK_ZIPWRITE_ZLIB -DFFPACK_ZIPWRITE_ZSTD -DFFPACK_ZIPWRITE_CRC32 $< -o $@
+
 %.o: $(FFPACK_DIR)/test/%.cpp $(HEADERS) $(FFPACK_DIR)/test/Makefile
 	$(CXX) $(TEST_CXXFLAGS) $< -o $@
 
