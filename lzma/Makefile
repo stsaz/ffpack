@@ -1,13 +1,14 @@
 # ffpack: lzma compression and filters from xz
 # 2020, Simon Zolin
 
-VER := 5.2.4
-URL := https://tukaani.org/xz/xz-$(VER).tar.xz
-
 include ../makeconf
 
+VER := 5.2.4
+URL := https://tukaani.org/xz/xz-$(VER).tar.xz
+LIB := liblzma-ffpack.$(SO)
+
 all: xz-$(VER)/config.h
-	make -rR liblzma-ff.$(SO)
+	make -rR $(LIB)
 
 # download
 xz-$(VER).tar.xz:
@@ -136,11 +137,11 @@ HEADERS := $(wildcard xz-$(VER)/src/liblzma/check/*.h) \
 xz-$(VER)/src/liblzma/%.o: xz-$(VER)/src/liblzma/%.c $(HEADERS)
 	$(C) $(CFLAGS) $< -o $@
 
-liblzma-ff.$(SO): $(OBJ)
+$(LIB): $(OBJ)
 	$(LINK) $(LDFLAGS) $+ -o $@
 
 clean:
 	$(RM) $(OBJ) xz-$(VER)
 
 distclean: clean
-	$(RM) liblzma-ff.so liblzma-ff.dll liblzma-ff.dylib
+	$(RM) liblzma-ffpack.so liblzma-ffpack.dll liblzma-ffpack.dylib

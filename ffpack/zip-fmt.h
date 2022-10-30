@@ -45,6 +45,12 @@ struct zip_fileinfo {
 	ffuint64 hdr_offset;
 };
 
+static inline int zip_fileinfo_isdir(const struct zip_fileinfo *zf)
+{
+	return ((zf->attr_unix & 0170000) == 0040000)
+		|| (zf->attr_win & 0x10);
+}
+
 #define ZIP_MINVER  20
 
 enum ZIP_FLAGS {

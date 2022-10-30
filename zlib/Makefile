@@ -1,13 +1,14 @@
 # ffpack: deflate compression from zlib
 # 2020, Simon Zolin
 
-VER := 1.2.11
-URL := https://www.zlib.net/zlib-$(VER).tar.xz
-
 include ../makeconf
 
+VER := 1.2.11
+URL := https://www.zlib.net/zlib-$(VER).tar.xz
+LIB := libz-ffpack.$(SO)
+
 all: zlib-$(VER)
-	make -rR libz-ff.$(SO)
+	make -rR $(LIB)
 
 # download
 zlib-$(VER).tar.xz:
@@ -44,11 +45,11 @@ zlib-ff.o: zlib-ff.c $(wildcard *.h)
 %.o: zlib-$(VER)/%.c
 	$(C) $(CFLAGS) $< -o $@
 
-libz-ff.$(SO): $(OBJ)
+$(LIB): $(OBJ)
 	$(LINK) $(LDFLAGS) $+ -o $@
 
 clean:
 	$(RM) $(OBJ) zlib-$(VER)
 
 distclean: clean
-	$(RM) libz-ff.so libz-ff.dll libz-ff.dylib
+	$(RM) libz-ffpack.so libz-ffpack.dll libz-ffpack.dylib

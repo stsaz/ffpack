@@ -1,16 +1,17 @@
 # ffpack: libzstd
 # 2021, Simon Zolin
 
+include ../makeconf
+
 VER := 1.5.0
 URL := https://github.com/facebook/zstd/releases/download/v$(VER)/zstd-$(VER).tar.zst
 PKG := ./zstd-$(VER).tar.zst
 PKGDIR := ./zstd-$(VER)
 LIBDIR := ./zstd-$(VER)/lib
-
-include ../makeconf
+LIB := libzstd-ffpack.$(SO)
 
 all: $(LIBDIR)
-	$(MAKE) -rR libzstd-ffpack.$(SO)
+	$(MAKE) -rR $(LIB)
 
 # download
 $(PKG):
@@ -65,7 +66,7 @@ zstd-ff.o: zstd-ff.c zstd-ff.h
 %.o: %.c
 	$(C) $(CFLAGS) $< -o $@
 
-libzstd-ffpack.$(SO): $(OBJ)
+$(LIB): $(OBJ)
 	$(LINK) $(LDFLAGS) $+ $(LINK_PTHREAD) -o $@
 
 

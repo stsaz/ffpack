@@ -71,6 +71,6 @@ endif
 # Set utils
 WGET := wget
 RM := rm -rf
-CP := cp -u
+CP := cp -au
 UNTAR_ZST := tar -x --zstd -f
 UNTAR_XZ := tar xJf

@@ -366,7 +366,7 @@ static int _ffzipr_zstd_unpack(ffzipread *z, ffstr input, ffstr *output, ffsize 
 static inline int ffzipread_process(ffzipread *z, ffstr *input, ffstr *output)
 {
 	ffssize r;
-	ffstr data;
+	ffstr data = {};
 	enum {
 		R_CDIR_TRL_SEEK, R_CDIR_TRL, R_CDIR64_LOC, R_CDIR64, R_CDIR_NEXT, R_CDIR, R_CDIR_DATA,
 		R_FHDR_SEEK = 20, R_FHDR, R_FHDR_DATA, R_DATA, R_FTRL, R_FTRL64, R_FILEDONE, R_DONE,
