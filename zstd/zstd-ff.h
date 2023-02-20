@@ -54,7 +54,7 @@ EXP int zstd_decode(zstd_decoder *dec, zstd_buf *in, zstd_buf *out);
 typedef struct zstd_encoder zstd_encoder;
 
 typedef struct zstd_enc_conf {
-	unsigned int level; // -7..22; default:3
+	int level; // -7..22; default:3
 	unsigned int workers; // default:1
 	size_t max_block_size;
 } zstd_enc_conf;

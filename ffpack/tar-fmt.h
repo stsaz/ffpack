@@ -197,7 +197,7 @@ static inline int tar_hdr_read(const char *buf, struct tar_fileinfo *f, char *fi
 	if (0 != tar_num64(h->size, sizeof(h->size), &f->size))
 		rc |= TAR_ESIZE;
 
-	ffuint64 tmval;
+	ffuint64 tmval = 0;
 	e |= tar_num64(h->mtime, sizeof(h->mtime), &tmval);
 	f->mtime.sec = tmval;  f->mtime.nsec = 0;
 

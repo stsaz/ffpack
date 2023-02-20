@@ -134,7 +134,7 @@ FF_EXTERN ffuint crc32(const void *buf, ffsize size, ffuint crc);
 static inline int ffgzread_process(ffgzread *r, ffstr *input, ffstr *output)
 {
 	ffssize rc;
-	ffstr data;
+	ffstr data = {};
 	enum {
 		R_BEGIN, R_GATHER, R_GATHER_STRZ, R_TRL,
 		R_HDR, R_HDR_FIELD, R_EXTRA_SIZE, R_EXTRA, R_NAME, R_COMMENT, R_HDRCRC,

@@ -37,7 +37,7 @@ typedef struct ffisowrite {
 	ffvec dirs_jlt; // struct _ffiso_dir[]
 	ffuint idir;
 	int ifile;
-	ffmap dirnames; // "_ffiso_dir/name" -> ffsize idir -> struct _ffiso_dir*
+	ffmap dirnames; // "dir/name" -> ffsize idir -> struct _ffiso_dir*
 	ffuint nsectors;
 	ffuint64 curfile_size;
 	const char *name; // Volume name
@@ -409,9 +409,10 @@ static void _ffisowrite_voldesc_prim_write_log(ffisowrite *w, const struct iso_v
 
 enum FFISOWRITE_R {
 	FFISOWRITE_MORE,
+	FFISOWRITE_NEXTFILE, // expecting ffisowrite_filenext()
 	FFISOWRITE_ERROR,
 	FFISOWRITE_SEEK,
-	FFISOWRITE_DATA, // call ffiso_output() to get file data
+	FFISOWRITE_DATA,
 	FFISOWRITE_DONE, // output .iso is finished
 };
 
@@ -548,7 +549,7 @@ static inline int ffisowrite_process(ffisowrite *w, ffstr *input, ffstr *output)
 					continue;
 				}
 				w->state = ISOW_FILE_NEXT;
-				return FFISOWRITE_MORE;
+				return FFISOWRITE_NEXTFILE;
 			}
 			if (0 != (r = _ffisowrite_dir_write(w, (w->state == ISOW_DIR_JLT))))
 				return _ERR(w, r);
@@ -582,7 +583,7 @@ static inline int ffisowrite_process(ffisowrite *w, ffstr *input, ffstr *output)
 			return FFISOWRITE_DATA;
 
 		case ISOW_FILE_NEXT:
-			return FFISOWRITE_MORE;
+			return FFISOWRITE_NEXTFILE;
 
 
 		case ISOW_VOLDESC_SEEK:
@@ -679,13 +680,13 @@ static struct _ffiso_dir* _ffisowrite_dir_find(ffisowrite *w, const ffstr *path)
 
 /** Add a new file
 Files inside directories must be added after all files in parent directory are added
- ("a", "_ffiso_dir", "z", and only then "_ffiso_dir/file")
+ ("a", "dir", "z", and only then "dir/file")
 Return 0 on success */
 static inline int ffisowrite_fileadd(ffisowrite *w, const struct iso_file *f)
 {
 	struct _ffiso_dir *parent, *d;
 	struct iso_file *nf;
-	ffstr path, name, fn = {};
+	ffstr path = {}, name, fn = {};
 
 	if (w->state != ISOW_DIR_WAIT) {
 		w->err = ISO_ENOTREADY;
@@ -703,7 +704,7 @@ static inline int ffisowrite_fileadd(ffisowrite *w, const struct iso_file *f)
 	_ffpack_path_splitpath_unix(fn.ptr, fn.len, &path, &name);
 	parent = _ffisowrite_dir_find(w, &path);
 	if (parent == NULL) {
-		w->err = ISO_EDIRORDER; // trying to add "_ffiso_dir/file" with no "_ffiso_dir" added previously
+		w->err = ISO_EDIRORDER; // trying to add "dir/file" with no "dir" added previously
 		goto err;
 	}
 

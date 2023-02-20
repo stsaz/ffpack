@@ -1,4 +1,5 @@
 /** ffpack: .xz reader
+- multi-chunk isn't supported
 2020, Simon Zolin */
 
 /*
@@ -111,7 +112,7 @@ static inline void ffxzread_close(ffxzread *r)
 */
 static inline int ffxzread_process(ffxzread *r, ffstr *input, ffstr *output)
 {
-	ffstr data;
+	ffstr data = {};
 	int rc;
 	enum {
 		R_BEGIN, R_GATHER, R_FTR, R_IDX, R_HDRSEEK, R_HDR,

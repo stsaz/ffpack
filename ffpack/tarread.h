@@ -99,7 +99,7 @@ static inline int fftarread_process(fftarread *t, ffstr *input, ffstr *output)
 		R_GATHER,
 	};
 	ffssize r;
-	ffstr data;
+	ffstr data = {};
 
 	for (;;) {
 		switch (t->state) {

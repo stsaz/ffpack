@@ -98,7 +98,7 @@ static inline int fftarwrite_fileadd(fftarwrite *w, fftarwrite_conf *conf)
 
 	struct tar_fileinfo info = *conf;
 	info.name = name;
-	w->fsize_hdr = conf->size;
+	w->fsize_hdr = (!dir) ? conf->size : 0;
 
 	int r;
 	r = tar_hdr_write(NULL, &info);

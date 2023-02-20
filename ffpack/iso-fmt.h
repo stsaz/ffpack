@@ -280,7 +280,7 @@ Directory name: "NAME"
 */
 static ffuint iso_ent_name_write(char *dst, const ffstr *filename, ffuint attr)
 {
-	ffstr name, ext;
+	ffstr name, ext = {};
 	_ffpack_path_splitname(filename->ptr, filename->len, &name, &ext);
 	name.len = ffmin(name.len, 8);
 	ext.len = ffmin(ext.len, 3);

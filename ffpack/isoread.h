@@ -104,7 +104,7 @@ static inline const char* ffisoread_error(ffisoread *o)
 #define _FFISO_GATHER(o, st) \
 	(o)->state = ISOR_GATHER,  (o)->nextstate = st
 
-static inline void ffisoread_init(ffisoread *o)
+static inline void ffisoread_open(ffisoread *o)
 {
 	fflist_init(&o->files);
 }

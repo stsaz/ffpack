@@ -85,8 +85,6 @@ int zstd_encode_init(zstd_encoder **penc, zstd_enc_conf *conf)
 	ZSTD_CCtx_reset(enc->z, ZSTD_reset_session_and_parameters);
 
 	if (conf != NULL) {
-		if (conf->level == 0)
-			conf->level = 3;
 		(void)ZSTD_CCtx_setParameter(enc->z, ZSTD_c_compressionLevel, conf->level);
 
 		if (conf->workers == 0)
