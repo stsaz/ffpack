@@ -233,7 +233,7 @@ static inline int tar_hdr_read(const char *buf, struct tar_fileinfo *f, char *fi
 		}
 	}
 
-	ffuint hchk, chk = tar_checksum((void*)h, 512);
+	ffuint hchk = 0, chk = tar_checksum((void*)h, 512);
 	if (0 != tar_num(h->chksum, sizeof(h->chksum), &hchk)
 		|| hchk != chk)
 		rc |= TAR_ECHECKSUM;

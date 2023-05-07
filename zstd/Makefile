@@ -54,11 +54,11 @@ OBJ := zstd-ff.o \
 	$(LIBDIR)/dictBuilder/fastcover.o \
 	$(LIBDIR)/dictBuilder/zdict.o
 
-CFLAGS := -I$(LIBDIR) \
+CFLAGS += -I$(LIBDIR) \
 	-DXXH_NAMESPACE=ZSTD_ -DDEBUGLEVEL=0 -DZSTD_MULTITHREAD -DZSTDLIB_VISIBILITY= -DZDICTLIB_VISIBILITY= -DZSTDERRORLIB_VISIBILITY= \
 	-O3 -flto -fno-asynchronous-unwind-tables -fvisibility=hidden -fpic
 
-LDFLAGS := -shared -s $(LINK_INSTALLNAME_LOADERPATH)
+LINKFLAGS += -shared -s $(LINK_INSTALLNAME_LOADERPATH)
 
 zstd-ff.o: zstd-ff.c zstd-ff.h
 	$(C) -I. $(CFLAGS) $< -o $@
@@ -67,7 +67,7 @@ zstd-ff.o: zstd-ff.c zstd-ff.h
 	$(C) $(CFLAGS) $< -o $@
 
 $(LIB): $(OBJ)
-	$(LINK) $(LDFLAGS) $+ $(LINK_PTHREAD) -o $@
+	$(LINK) $(LINKFLAGS) $+ $(LINK_PTHREAD) -o $@
 
 
 cleanobj:
