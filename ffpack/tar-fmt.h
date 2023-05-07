@@ -143,7 +143,7 @@ static inline ffuint tar_checksum(const char *d, ffsize len)
 
 static const ffbyte tar_ftype[] = {
 	0100000 >> 12, // TAR_FILE
-	0120000 >> 12, // TAR_HLINK
+	0100000 >> 12, // TAR_HLINK
 	0120000 >> 12, // TAR_SLINK
 	0020000 >> 12, // TAR_CHAR
 	0060000 >> 12, // TAR_BLOCK
@@ -263,6 +263,10 @@ static inline int _tar_hdr_write(char *buf, const struct tar_fileinfo *f, ffuint
 
 	if (e)
 		return TAR_ENUMBER;
+
+	if (f->link_to.len > sizeof(h->linkname))
+		return TAR_ESIZE;
+	ffmem_copy(h->linkname, f->link_to.ptr, f->link_to.len);
 
 	struct tar_hdr_gnu *g = (struct tar_hdr_gnu*)(h + 1);
 	ffmem_copy(g->magic, TAR_GNU_MAGIC, FFS_LEN(TAR_GNU_MAGIC));
