@@ -1,19 +1,23 @@
-include makeconf
-# ARCH := CPU=i686
-BINDIR := _$(OS)-amd64
+include config.mk
+BINDIR := _$(SYS)-$(CPU)
 
-libs:
-	cd lzma && $(MAKE) -Rr
-	cd zlib && $(MAKE) -Rr
-	cd zstd && $(MAKE) -Rr
+LIBS := \
+	lzma \
+	zlib \
+	zstd
 
-install:
-	$(MKDIR) $(BINDIR)
-	$(CP) \
-		lzma/*.$(SO) \
-		zlib/*.$(SO) \
-		zstd/*.$(SO) \
-		$(BINDIR)
+default:
+	mkdir -p $(BINDIR)
+	$(MAKE) build
+
+build: $(addprefix $(BINDIR)/lib,$(addsuffix -ffpack.$(SO),$(LIBS)))
+
+libzstd: $(BINDIR)/libzstd-ffpack.$(SO)
+
+$(BINDIR)/lib%-ffpack.$(SO): %
+	$(MAKE) -I.. -C $<
+	mkdir -p $(BINDIR)
+	mv $</*.$(SO) $(BINDIR)/
 
 md5:
 	md5sum -b \

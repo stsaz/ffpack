@@ -1,7 +1,7 @@
 # ffpack: lzma compression and filters from xz
 # 2020, Simon Zolin
 
-include ../makeconf
+include ../config.mk
 
 VER := 5.2.4
 URL := https://tukaani.org/xz/xz-$(VER).tar.xz

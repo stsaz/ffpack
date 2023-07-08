@@ -1,7 +1,7 @@
 # ffpack: deflate compression from zlib
 # 2020, Simon Zolin
 
-include ../makeconf
+include ../config.mk
 
 VER := 1.2.11
 URL := https://www.zlib.net/zlib-$(VER).tar.xz
