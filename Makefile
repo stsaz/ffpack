@@ -12,12 +12,21 @@ default:
 
 build: $(addprefix $(BINDIR)/lib,$(addsuffix -ffpack.$(SO),$(LIBS)))
 
-libzstd: $(BINDIR)/libzstd-ffpack.$(SO)
-
-$(BINDIR)/lib%-ffpack.$(SO): %
-	$(MAKE) -I.. -C $<
+$(BINDIR)/liblzma-ffpack.$(SO):
+	$(MAKE) -C lzma -I..
 	mkdir -p $(BINDIR)
-	mv $</*.$(SO) $(BINDIR)/
+	mv lzma/*.$(SO) $(BINDIR)/
+
+$(BINDIR)/libzlib-ffpack.$(SO):
+	$(MAKE) -C zlib -I..
+	mkdir -p $(BINDIR)
+	mv zlib/*.$(SO) $(BINDIR)/
+
+libzstd: $(BINDIR)/libzstd-ffpack.$(SO)
+$(BINDIR)/libzstd-ffpack.$(SO):
+	$(MAKE) -C zstd -I..
+	mkdir -p $(BINDIR)
+	mv zstd/*.$(SO) $(BINDIR)/
 
 md5:
 	md5sum -b \
