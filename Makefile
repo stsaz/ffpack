@@ -10,19 +10,24 @@ default:
 	mkdir -p $(BINDIR)
 	$(MAKE) build
 
-build: $(addprefix $(BINDIR)/lib,$(addsuffix -ffpack.$(SO),$(LIBS)))
+build: $(LIBS)
 
+.PHONY: lzma
+lzma: $(BINDIR)/liblzma-ffpack.$(SO)
 $(BINDIR)/liblzma-ffpack.$(SO):
 	$(MAKE) -C lzma -I..
 	mkdir -p $(BINDIR)
 	mv lzma/*.$(SO) $(BINDIR)/
 
-$(BINDIR)/libzlib-ffpack.$(SO):
+.PHONY: zlib
+zlib: $(BINDIR)/libz-ffpack.$(SO)
+$(BINDIR)/libz-ffpack.$(SO):
 	$(MAKE) -C zlib -I..
 	mkdir -p $(BINDIR)
 	mv zlib/*.$(SO) $(BINDIR)/
 
-libzstd: $(BINDIR)/libzstd-ffpack.$(SO)
+.PHONY: zstd
+zstd: $(BINDIR)/libzstd-ffpack.$(SO)
 $(BINDIR)/libzstd-ffpack.$(SO):
 	$(MAKE) -C zstd -I..
 	mkdir -p $(BINDIR)

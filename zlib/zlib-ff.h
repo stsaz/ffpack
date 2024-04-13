@@ -60,8 +60,10 @@ EXP void z_deflate_free(z_ctx *z);
 EXP void z_deflate_reset(z_ctx *z);
 
 /**
-@flags: enum Z_FLAGS
-Return the number of bytes written;  0 if more data is needed;  enum Z_ERR on error. */
+flags: enum Z_FLAGS
+Return the number of bytes written;
+	0 if more data is needed;
+	enum Z_ERR on error */
 EXP int z_deflate(z_ctx *z, const char *data, size_t *len, char *dst, size_t cap, unsigned int flags);
 
 
@@ -74,8 +76,10 @@ EXP void z_inflate_free(z_ctx *z);
 EXP void z_inflate_reset(z_ctx *z);
 
 /**
-@flags: enum Z_FLAGS
-Return the number of bytes written;  0 if more data is needed;  enum Z_ERR on error. */
+flags: enum Z_FLAGS
+Return the number of bytes written;
+	0 if more data is needed;
+	enum Z_ERR on error */
 EXP int z_inflate(z_ctx *z, const char *data, size_t *len, char *dst, size_t cap, unsigned int flags);
 
 #ifdef __cplusplus

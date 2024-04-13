@@ -111,9 +111,12 @@ int z_inflate_init(z_ctx **pz, z_conf *conf)
 	if (NULL == (z = calloc(1, sizeof(z_ctx))))
 		return -1;
 
-	z->stm.zalloc = conf->zalloc;
-	z->stm.zfree = conf->zfree;
-	z->stm.opaque = conf->opaque;
+	if (conf) {
+		z->stm.zalloc = conf->zalloc;
+		z->stm.zfree = conf->zfree;
+		z->stm.opaque = conf->opaque;
+	}
+
 	if (0 != inflateInit2(&z->stm, -15)) {
 		free(z);
 		return -1;

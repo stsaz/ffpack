@@ -369,7 +369,7 @@ static inline int ffzipread_process(ffzipread *z, ffstr *input, ffstr *output)
 	ffstr data = {};
 	enum {
 		R_CDIR_TRL_SEEK, R_CDIR_TRL, R_CDIR64_LOC, R_CDIR64, R_CDIR_NEXT, R_CDIR, R_CDIR_DATA,
-		R_FHDR_SEEK = 20, R_FHDR, R_FHDR_DATA, R_DATA, R_FTRL, R_FTRL64, R_FILEDONE, R_DONE,
+		R_FHDR_SEEK = 20, R_FHDR, R_FHDR_DATA, R_DATA, R_FTRL, R_FTRL64, R_FILEDONE, R_FILEDONE2, R_DONE,
 		R_GATHER, R_GATHER_MORE,
 	};
 
@@ -632,8 +632,11 @@ static inline int ffzipread_process(ffzipread *z, ffstr *input, ffstr *output)
 		case R_FILEDONE:
 			if (z->crc != z->fileinfo.uncompressed_crc) {
 				z->error = "computed CRC doesn't match CRC from header";
+				z->state = R_FILEDONE2;
 				return FFZIPREAD_WARNING;
 			}
+			// fallthrough
+		case R_FILEDONE2:
 			z->state = R_DONE;
 			return FFZIPREAD_FILEDONE;
 
