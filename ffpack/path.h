@@ -72,7 +72,6 @@ static inline ffssize _ffpack_path_normalize(char *dst, ffsize cap, const char *
 	ffstr s, part;
 	ffstr_set(&s, src, len);
 	int simplify = !!(flags & _FFPACK_PATH_SIMPLE);
-	int skip_disk = (flags & (_FFPACK_PATH_DISK_LETTER | _FFPACK_PATH_SIMPLE)) == (_FFPACK_PATH_DISK_LETTER | _FFPACK_PATH_SIMPLE);
 
 	const char *slashes = (flags & _FFPACK_PATH_SLASH_BACKSLASH) ? "/\\" : "/";
 #ifdef FF_WIN
@@ -82,6 +81,7 @@ static inline ffssize _ffpack_path_normalize(char *dst, ffsize cap, const char *
 	if ((flags & (_FFPACK_PATH_DISK_LETTER | _FFPACK_PATH_NO_DISK_LETTER)) == 0)
 		flags |= _FFPACK_PATH_DISK_LETTER;
 #endif
+	int skip_disk = (flags & (_FFPACK_PATH_DISK_LETTER | _FFPACK_PATH_SIMPLE)) == (_FFPACK_PATH_DISK_LETTER | _FFPACK_PATH_SIMPLE);
 
 	while (s.len != 0) {
 		const char *s2 = s.ptr;
