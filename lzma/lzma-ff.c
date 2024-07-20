@@ -1,7 +1,7 @@
 /**
 Simon Zolin, 2016 */
 
-#include <lzma-ff.h>
+#include "lzma-ff.h"
 #include <common.h>
 #include <lzma.h>
 #include <common/block_decoder.h>

@@ -1,7 +1,7 @@
 include ../ffbase/conf.mk
 
 # Set utils
-WGET := wget
+CURL := curl -L
 UNTAR_ZST := tar -x --zstd -f
 UNTAR_XZ := tar xJf
 

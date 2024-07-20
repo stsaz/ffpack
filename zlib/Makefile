@@ -5,19 +5,20 @@ include ../config.mk
 
 VER := 1.2.11
 URL := https://www.zlib.net/zlib-$(VER).tar.xz
+PKG := $(FFPACK)/zlib/$(notdir $(URL))
+PKGDIR := zlib-$(VER)
 LIB := libz-ffpack.$(SO)
 
-all: zlib-$(VER)
-	make -rR $(LIB)
+default: $(PKGDIR)
+	$(SUBMAKE) $(LIB)
 
 # download
-zlib-$(VER).tar.xz:
-	$(WGET) $(URL)
+$(PKG):
+	$(CURL) -o $@ $(URL)
 
 # unpack
-zlib-$(VER): zlib-$(VER).tar.xz
-	$(UNTAR_XZ) zlib-$(VER).tar.xz
-	touch zlib-$(VER)
+$(PKGDIR): $(PKG)
+	$(UNTAR_XZ) $(PKG)
 
 # build
 SRC := adler32.c \
@@ -30,7 +31,7 @@ SRC := adler32.c \
 	zutil.c
 OBJ := zlib-ff.o $(SRC:.c=.o)
 
-CFLAGS := -Izlib-$(VER) \
+CFLAGS := -I$(PKGDIR) \
 	-DZ_EXP -DNO_GZIP -DHAVE_UNISTD_H -DHAVE_STDARG_H -D_LARGEFILE64_SOURCE=1 \
 	-O3 -flto -fvisibility=hidden -fno-asynchronous-unwind-tables -fpic
 ifneq ($(OS),win)
@@ -39,10 +40,10 @@ endif
 
 LDFLAGS := $(LINK_INSTALLNAME_LOADERPATH) -shared -s
 
-zlib-ff.o: zlib-ff.c $(wildcard *.h)
-	$(C) -I. $(CFLAGS) $< -o $@
+zlib-ff.o: $(FFPACK)/zlib/zlib-ff.c $(FFPACK)/zlib/zlib-ff.h
+	$(C) $(CFLAGS) $< -o $@
 
-%.o: zlib-$(VER)/%.c
+%.o: $(PKGDIR)/%.c
 	$(C) $(CFLAGS) $< -o $@
 
 $(LIB): $(OBJ)

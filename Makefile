@@ -1,44 +1,31 @@
 include config.mk
-BINDIR := _$(SYS)-$(CPU)
+export FFPACK := $(dir $(firstword $(MAKEFILE_LIST)))
+LIBS := lzma zlib zstd
 
-LIBS := \
-	lzma \
-	zlib \
-	zstd
-
-default:
-	mkdir -p $(BINDIR)
-	$(MAKE) build
-
-build: $(LIBS)
+default: $(LIBS)
+	$(SUBMAKE) md5check
 
 .PHONY: lzma
-lzma: $(BINDIR)/liblzma-ffpack.$(SO)
-$(BINDIR)/liblzma-ffpack.$(SO):
-	$(MAKE) -C lzma -I..
-	mkdir -p $(BINDIR)
-	mv lzma/*.$(SO) $(BINDIR)/
+lzma: liblzma-ffpack.$(SO)
+liblzma-ffpack.$(SO):
+	$(MAKE) -f $(FFPACK)/lzma/Makefile
 
 .PHONY: zlib
-zlib: $(BINDIR)/libz-ffpack.$(SO)
-$(BINDIR)/libz-ffpack.$(SO):
-	$(MAKE) -C zlib -I..
-	mkdir -p $(BINDIR)
-	mv zlib/*.$(SO) $(BINDIR)/
+zlib: libz-ffpack.$(SO)
+libz-ffpack.$(SO):
+	$(MAKE) -f $(FFPACK)/zlib/Makefile
 
 .PHONY: zstd
-zstd: $(BINDIR)/libzstd-ffpack.$(SO)
-$(BINDIR)/libzstd-ffpack.$(SO):
-	$(MAKE) -C zstd -I..
-	mkdir -p $(BINDIR)
-	mv zstd/*.$(SO) $(BINDIR)/
+zstd: libzstd-ffpack.$(SO)
+libzstd-ffpack.$(SO):
+	$(MAKE) -f $(FFPACK)/zstd/Makefile
 
 md5:
-	md5sum -b \
+	cd $(FFPACK) && md5sum -b \
 		lzma/xz-5.2.4.tar.xz \
 		zlib/zlib-1.2.11.tar.xz \
 		zstd/zstd-1.5.0.tar.zst \
 		>packages.md5
 
 md5check:
-	md5sum -c packages.md5 --ignore-missing
+	cd $(FFPACK) && md5sum -c packages.md5 --ignore-missing

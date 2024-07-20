@@ -16,17 +16,19 @@ However, dependent libraries must be built into `.so/.dll`, because ffpack doesn
 
 ## Features
 
-* .gz read/write (`ffpack/gzread.h`, `ffpack/gzwrite.h`).  Dependencies: libz-ff.
-* .xz read (`ffpack/xzread.h`).  Dependencies: liblzma-ff.
-* .zip read/write (`ffpack/zipread.h`, `ffpack/zipwrite.h`).  Dependencies: libz-ff.
-* .7z read/write (`ffpack/7zread.h`).  Dependencies: liblzma-ff, libz-ff.
-* .tar read/write (`ffpack/tarread.h`, `ffpack/tarwrite.h`).
-* .iso read/write (`ffpack/isoread.h`, `ffpack/isowrite.h`)
-* lzma decompress (`zstd/lzma-ff.h`)
-* zlib compress/decompress (`zlib/zlib-ff.h`)
-* zstd compress/decompress (`zstd/zstd-ff.h`)
+| Purpose | Include | Dependencies |
+| --- | --- | --- |
+| .gz read/write | `ffpack/gzread.h`, `ffpack/gzwrite.h` | libz-ff |
+| .xz read | `ffpack/xzread.h` | liblzma-ff |
+| .zip read/write | `ffpack/zipread.h`, `ffpack/zipwrite.h` | libz-ff |
+| .7z read/write | `ffpack/7zread.h` | liblzma-ff, libz-ff |
+| .tar read/write | `ffpack/tarread.h`, `ffpack/tarwrite.h` |
+| .iso read/write | `ffpack/isoread.h`, `ffpack/isowrite.h` |
+| lzma decompress | `zstd/lzma-ff.h` | |
+| zlib compress/decompress | `zlib/zlib-ff.h` | |
+| zstd compress/decompress | `zstd/zstd-ff.h` | |
 
-It doesn't contain code that reads or writes files - this is the responsibility of the user.
+Note: ffpack doesn't contain code that reads or writes files - this is the user's responsibility.
 
 ### Low-level functions
 
@@ -44,21 +46,27 @@ Use helper functions and structures if you want to write your own readers and wr
 
 1. Clone repos:
 
-		$ git clone https://github.com/stsaz/ffbase
-		$ git clone https://github.com/stsaz/ffpack
+	```sh
+	git clone https://github.com/stsaz/ffbase
+	git clone https://github.com/stsaz/ffpack
+	```
 
 2. Build dependent libraries.
 
 	There are scripts to automatically download and build the required dependency libraries (based on these official packages: xz, zlib, zstd).
 
-		cd ffpack
-		make libs
+	```sh
+	cd ffpack
+	mkdir _linux-amd64
+	cd _linux-amd64
+	make -j8 -f ../Makefile -I ..
+	```
 
 	This command will create these files:
 
-		lzma/liblzma-ff.so
-		zlib/libz-ff.so
-		zstd/libzstd-ffpack.so
+		liblzma-ff.so
+		libz-ff.so
+		libzstd-ffpack.so
 
 	You may copy these files into your project directory.
 
@@ -260,15 +268,16 @@ Use helper functions and structures if you want to write your own readers and wr
 
 ## Test
 
-	git clone https://github.com/stsaz/ffbase
-	git clone https://github.com/stsaz/ffpack
-	cd ffpack/test
-	make libs
-	make
-	./ffpack-test all
-
+```sh
+git clone https://github.com/stsaz/ffbase
+git clone https://github.com/stsaz/ffpack
+cd ffpack/test
+make libs
+make
+./ffpack-test all
+```
 
 ## License
 
+ffpack is in the public domain.
 Third-party code is the property of their owners.
-All other code is absolutely free.

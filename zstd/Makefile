@@ -5,22 +5,21 @@ include ../config.mk
 
 VER := 1.5.0
 URL := https://github.com/facebook/zstd/releases/download/v$(VER)/zstd-$(VER).tar.zst
-PKG := ./zstd-$(VER).tar.zst
-PKGDIR := ./zstd-$(VER)
-LIBDIR := ./zstd-$(VER)/lib
+PKG := $(FFPACK)/zstd/zstd-$(VER).tar.zst
+PKGDIR := zstd-$(VER)
+LIBDIR := zstd-$(VER)/lib
 LIB := libzstd-ffpack.$(SO)
 
-all: $(LIBDIR)
-	$(MAKE) -rR $(LIB)
+default: $(LIBDIR)
+	$(SUBMAKE) $(LIB)
 
 # download
 $(PKG):
-	$(WGET) $(URL)
+	$(CURL) -o $@ $(URL)
 
 # unpack
 $(LIBDIR): $(PKG)
 	$(UNTAR_ZST) $<
-	touch $@
 
 # build
 OBJ := zstd-ff.o \
@@ -60,8 +59,8 @@ CFLAGS += -I$(LIBDIR) \
 
 LINKFLAGS += -shared -s $(LINK_INSTALLNAME_LOADERPATH)
 
-zstd-ff.o: zstd-ff.c zstd-ff.h
-	$(C) -I. $(CFLAGS) $< -o $@
+zstd-ff.o: $(FFPACK)/zstd/zstd-ff.c $(FFPACK)/zstd/zstd-ff.h
+	$(C) $(CFLAGS) $< -o $@
 
 %.o: %.c
 	$(C) $(CFLAGS) $< -o $@
