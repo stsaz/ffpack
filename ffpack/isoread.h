@@ -288,9 +288,8 @@ static inline int ffisoread_process(ffisoread *o, ffstr *input, ffstr *output)
 				if (n < 0)
 					return _FFISO_ERR(o, -ISO_ENAME);
 				ffstr_set(&o->curfile.name, o->fn.ptr, n);
-			} else {
-				o->curfile.name = iso_ent_name(&o->curfile.name);
 			}
+			o->curfile.name = iso_ent_name(&o->curfile.name);
 
 			if (!(o->options & FFISOREAD_NO_RR)) {
 				void *ent = o->d.ptr - r;
