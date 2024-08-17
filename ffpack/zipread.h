@@ -3,6 +3,10 @@
 * CRC check
 * doesn't support encryption, multi-disk archives
 
+Building:
+Define FFPACK_ZIPREAD_ZLIB, FFPACK_ZIPREAD_ZSTD
+ to use zlib/zstd third-party code referenced by ffpack.
+
 2020, Simon Zolin */
 
 /*
@@ -19,11 +23,11 @@ ffzipread_fileread
 
 #include <ffpack/path.h>
 #include <ffpack/zip-fmt.h>
-#include <zlib/zlib-ff.h>
-#include <zstd/zstd-ff.h>
 #include <ffbase/vector.h>
 #include <ffbase/string.h>
 
+struct z_ctx;
+struct zstd_decoder;
 typedef struct ffzipread ffzipread;
 typedef struct zip_fileinfo ffzipread_fileinfo_t;
 typedef void (*ffzipread_log)(void *udata, ffuint level, ffstr msg);
@@ -38,8 +42,15 @@ struct ffzipread {
 	ffuint64 cdir_end; // offset where CDIR ends
 	ffuint64 file_rd, file_wr;
 	ffuint crc; // current CRC
-	z_ctx *lz;
-	zstd_decoder *zstd;
+
+#ifdef FFPACK_ZIPREAD_ZLIB
+	struct z_ctx *lz;
+#endif
+
+#ifdef FFPACK_ZIPREAD_ZSTD
+	struct zstd_decoder *zstd;
+#endif
+
 	ffzipread_fileinfo_t fileinfo;
 	_ffzipread_unpack unpack_func;
 	ffuint64 file_comp_size;
@@ -136,10 +147,14 @@ static inline void ffzipread_fileread(ffzipread *z, ffuint64 hdr_offset, ffuint6
 	z->file_comp_size = comp_size;
 }
 
-static int _ffzipread_deflated_unpack(ffzipread *z, ffstr input, ffstr *output, ffsize *rd);
-static void _ffzipr_deflated_close(ffzipread *z);
-static int _ffzipr_zstd_unpack(ffzipread *z, ffstr input, ffstr *output, ffsize *rd);
-static void _ffzipr_zstd_close(ffzipread *z);
+
+#ifdef FFPACK_ZIPREAD_ZLIB
+	#include <ffpack/zipread-libz.h>
+#endif
+#ifdef FFPACK_ZIPREAD_ZSTD
+	#include <ffpack/zipread-zstd.h>
+#endif
+
 
 static inline int ffzipread_open(ffzipread *z, ffint64 total_size)
 {
@@ -156,8 +171,15 @@ static inline void ffzipread_close(ffzipread *z)
 {
 	ffvec_free(&z->buf);
 	ffstr_free(&z->fileinfo.name);
+
+#ifdef FFPACK_ZIPREAD_ZLIB
 	_ffzipr_deflated_close(z);
+#endif
+
+#ifdef FFPACK_ZIPREAD_ZSTD
 	_ffzipr_zstd_close(z);
+#endif
+
 	ffmem_free(z->error_buf);  z->error_buf = NULL;
 }
 
@@ -252,99 +274,6 @@ static inline int _ffzipread_stored_unpack(ffzipread *z, ffstr input, ffstr *out
 	}
 	*rd = input.len;
 	ffstr_set(output, input.ptr, *rd);
-	return 0;
-}
-
-
-static inline int _ffzipread_deflated_init(ffzipread *z)
-{
-	if (z->lz == NULL) {
-		z_conf zconf = {};
-		if (0 != z_inflate_init(&z->lz, &zconf)) {
-			z->error = "z_inflate_init()";
-			return FFZIPREAD_ERROR;
-		}
-	} else {
-		z_inflate_reset(z->lz);
-	}
-	z->unpack_func = _ffzipread_deflated_unpack;
-	return 0;
-}
-
-static void _ffzipr_deflated_close(ffzipread *z)
-{
-	if (z->lz != NULL) {
-		z_inflate_free(z->lz);
-		z->lz = NULL;
-	}
-}
-
-static inline int _ffzipread_deflated_unpack(ffzipread *z, ffstr input, ffstr *output, ffsize *rd)
-{
-	*rd = input.len;
-	ffssize r = z_inflate(z->lz, input.ptr, rd, (char*)z->buf.ptr, z->buf.cap, 0);
-
-	if (r == 0) {
-		return 0xfeed;
-
-	} else if (r == Z_DONE) {
-		return 0xa11;
-
-	} else if (r < 0) {
-		z->error = "z_inflate()";
-		return 0xbad;
-	}
-
-	z->buf.len += r;
-	ffstr_set2(output, &z->buf);
-	z->buf.len = 0;
-	return 0;
-}
-
-
-static int _ffzipr_zstd_init(ffzipread *z)
-{
-	zstd_dec_conf zconf = {};
-	if (0 != zstd_decode_init(&z->zstd, &zconf)) {
-		z->error = "zstd_decode_init";
-		return FFZIPREAD_ERROR;
-	}
-	z->unpack_func = _ffzipr_zstd_unpack;
-	return 0;
-}
-
-static void _ffzipr_zstd_close(ffzipread *z)
-{
-	if (z->zstd != NULL) {
-		zstd_decode_free(z->zstd);
-		z->zstd = NULL;
-	}
-}
-
-static int _ffzipr_zstd_unpack(ffzipread *z, ffstr input, ffstr *output, ffsize *rd)
-{
-	int done = (*rd == 0);
-	zstd_buf in, out;
-	zstd_buf_set(&in, input.ptr, input.len);
-	zstd_buf_set(&out, z->buf.ptr, z->buf.cap);
-	int r = zstd_decode(z->zstd, &in, &out);
-	*rd = in.pos;
-
-	if (r < 0) {
-		ffmem_free(z->error_buf);
-		z->error_buf = ffsz_allocfmt("zstd_decode: %s", zstd_error(r));
-		z->error = z->error_buf;
-		return 0xbad;
-	}
-	if (out.pos == 0) {
-		if (done)
-			return 0xa11;
-		return 0xfeed;
-	}
-
-	z->buf.len = out.pos;
-	ffstr_set2(output, &z->buf);
-	z->buf.len = 0;
 	return 0;
 }
 
@@ -531,17 +460,21 @@ static inline int ffzipread_process(ffzipread *z, ffstr *input, ffstr *output)
 				z->unpack_func = _ffzipread_stored_unpack;
 				break;
 
+#ifdef FFPACK_ZIPREAD_ZLIB
 			case ZIP_DEFLATED:
 				if (0 != _ffzipread_deflated_init(z)) {
 					return FFZIPREAD_ERROR;
 				}
 				break;
+#endif
 
+#ifdef FFPACK_ZIPREAD_ZSTD
 			case ZIP_ZSTANDARD:
 				if (0 != _ffzipr_zstd_init(z)) {
 					return FFZIPREAD_ERROR;
 				}
 				break;
+#endif
 
 			default:
 				z->error = "unsupported compression method";

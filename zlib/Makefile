@@ -11,6 +11,7 @@ LIB := libz-ffpack.$(SO)
 
 default: $(PKGDIR)
 	$(SUBMAKE) $(LIB)
+	$(SUBMAKE) libz.a
 
 # download
 $(PKG):
@@ -48,6 +49,9 @@ zlib-ff.o: $(FFPACK)/zlib/zlib-ff.c $(FFPACK)/zlib/zlib-ff.h
 
 $(LIB): $(OBJ)
 	$(LINK) $(LDFLAGS) $+ -o $@
+
+libz.a: $(OBJ)
+	$(AR) rcs $@ $+
 
 clean:
 	$(RM) $(OBJ) zlib-$(VER)
