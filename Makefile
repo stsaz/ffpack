@@ -24,7 +24,6 @@ md5:
 	cd $(FFPACK) && md5sum -b \
 		lzma/xz-5.2.4.tar.xz \
 		zlib/zlib-1.2.11.tar.xz \
-		zstd/zstd-1.5.0.tar.zst \
 		>packages.md5
 
 md5check:

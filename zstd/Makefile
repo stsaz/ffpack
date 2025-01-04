@@ -3,8 +3,9 @@
 
 include ../config.mk
 
-VER := 1.5.0
+VER := 1.5.6
 URL := https://github.com/facebook/zstd/releases/download/v$(VER)/zstd-$(VER).tar.zst
+MD5SUM := bbd2a625cb4407f0003d9f49e406463f
 PKG := $(FFPACK)/zstd/zstd-$(VER).tar.zst
 PKGDIR := zstd-$(VER)
 LIBDIR := zstd-$(VER)/lib
@@ -19,6 +20,7 @@ $(PKG):
 
 # unpack
 $(LIBDIR): $(PKG)
+	echo "$(MD5SUM) *$(PKG)" | md5sum -c -
 	$(UNTAR_ZST) $<
 
 # build
@@ -53,6 +55,10 @@ OBJ := zstd-ff.o \
 	$(LIBDIR)/dictBuilder/fastcover.o \
 	$(LIBDIR)/dictBuilder/zdict.o
 
+ifeq "$(CPU)" "amd64"
+	OBJ += $(LIBDIR)/decompress/huf_decompress_amd64.o
+endif
+
 CFLAGS += -I$(LIBDIR) \
 	-DXXH_NAMESPACE=ZSTD_ -DDEBUGLEVEL=0 -DZSTD_MULTITHREAD -DZSTDLIB_VISIBILITY= -DZDICTLIB_VISIBILITY= -DZSTDERRORLIB_VISIBILITY= \
 	-O3 -flto -fno-asynchronous-unwind-tables -fvisibility=hidden -fpic
@@ -63,6 +69,9 @@ zstd-ff.o: $(FFPACK)/zstd/zstd-ff.c $(FFPACK)/zstd/zstd-ff.h
 	$(C) $(CFLAGS) $< -o $@
 
 %.o: %.c
+	$(C) $(CFLAGS) $< -o $@
+
+%.o: %.S
 	$(C) $(CFLAGS) $< -o $@
 
 $(LIB): $(OBJ)
