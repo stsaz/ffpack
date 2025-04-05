@@ -24,7 +24,7 @@ However, dependent libraries must be built into `.so/.dll`, because ffpack doesn
 | .7z read/write | `ffpack/7zread.h` | liblzma-ff, libz-ff |
 | .tar read/write | `ffpack/tarread.h`, `ffpack/tarwrite.h` |
 | .iso read/write | `ffpack/isoread.h`, `ffpack/isowrite.h` |
-| lzma decompress | `zstd/lzma-ff.h` | |
+| lzma decompress | `lzma/lzma-ff.h` | |
 | zlib compress/decompress | `zlib/zlib-ff.h` | |
 | zstd compress/decompress | `zstd/zstd-ff.h` | |
 

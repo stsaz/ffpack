@@ -3,9 +3,9 @@
 
 include ../config.mk
 
-VER := 1.5.6
+VER := 1.5.7
 URL := https://github.com/facebook/zstd/releases/download/v$(VER)/zstd-$(VER).tar.zst
-MD5SUM := bbd2a625cb4407f0003d9f49e406463f
+MD5SUM := 5b02ed5b57fdfad22db1c6a9c55ff340
 PKG := $(FFPACK)/zstd/zstd-$(VER).tar.zst
 PKGDIR := zstd-$(VER)
 LIBDIR := zstd-$(VER)/lib
@@ -45,6 +45,7 @@ OBJ := zstd-ff.o \
 	$(LIBDIR)/compress/zstd_lazy.o \
 	$(LIBDIR)/compress/zstd_ldm.o \
 	$(LIBDIR)/compress/zstd_opt.o \
+	$(LIBDIR)/compress/zstd_preSplit.o \
 	$(LIBDIR)/compress/zstdmt_compress.o \
 	$(LIBDIR)/decompress/huf_decompress.o \
 	$(LIBDIR)/decompress/zstd_ddict.o \
