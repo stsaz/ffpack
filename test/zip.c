@@ -1,8 +1,8 @@
 /** ffpack: zip.h tester
 2020, Simon Zolin */
 
-#include <ffpack/zipread.h>
-#include <ffpack/zipwrite.h>
+#include <ffpack/zip-read.h>
+#include <ffpack/zip-write.h>
 #include <test/test.h>
 
 #define fflog(fmt, ...)  (void) printf(fmt "\n", ##__VA_ARGS__)

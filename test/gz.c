@@ -1,8 +1,8 @@
 /** ffpack: gz.h tester
 2020, Simon Zolin */
 
-#include <ffpack/gzread.h>
-#include <ffpack/gzwrite.h>
+#include <ffpack/gz-read.h>
+#include <ffpack/gz-write.h>
 #include <test/test.h>
 
 #define fflog(fmt, ...)  (void) printf(fmt "\n", ##__VA_ARGS__)

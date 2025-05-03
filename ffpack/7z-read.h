@@ -13,7 +13,7 @@ ff7zread_offset
 
 #pragma once
 
-#include <ffpack/7z-fmt.h>
+#include <ffpack/base/7z.h>
 #include <zlib/zlib-ff.h>
 #include <lzma/lzma-ff.h>
 #include <ffbase/time.h>

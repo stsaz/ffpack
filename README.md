@@ -18,12 +18,12 @@ However, dependent libraries must be built into `.so/.dll`, because ffpack doesn
 
 | Purpose | Include | Dependencies |
 | --- | --- | --- |
-| .gz read/write | `ffpack/gzread.h`, `ffpack/gzwrite.h` | libz-ff |
-| .xz read | `ffpack/xzread.h` | liblzma-ff |
-| .zip read/write | `ffpack/zipread.h`, `ffpack/zipwrite.h` | libz-ff |
-| .7z read/write | `ffpack/7zread.h` | liblzma-ff, libz-ff |
-| .tar read/write | `ffpack/tarread.h`, `ffpack/tarwrite.h` |
-| .iso read/write | `ffpack/isoread.h`, `ffpack/isowrite.h` |
+| .gz read/write | `ffpack/gz-read.h`, `ffpack/gz-write.h` | libz-ff |
+| .xz read | `ffpack/xz-read.h` | liblzma-ff |
+| .zip read/write | `ffpack/zip-read.h`, `ffpack/zip-write.h` | libz-ff |
+| .7z read/write | `ffpack/7z-read.h` | liblzma-ff, libz-ff |
+| .tar read/write | `ffpack/tar-read.h`, `ffpack/tar-write.h` |
+| .iso read/write | `ffpack/iso-read.h`, `ffpack/iso-write.h` |
 | lzma decompress | `lzma/lzma-ff.h` | |
 | zlib compress/decompress | `zlib/zlib-ff.h` | |
 | zstd compress/decompress | `zstd/zstd-ff.h` | |
@@ -34,12 +34,12 @@ Note: ffpack doesn't contain code that reads or writes files - this is the user'
 
 Use helper functions and structures if you want to write your own readers and writers.
 
-* .gz format (`ffpack/gz-fmt.h`)
-* .xz format (`ffpack/xz-fmt.h`)
-* .zip format (`ffpack/zip-fmt.h`)
-* .7z format (`ffpack/7z-fmt.h`)
-* .tar format (`ffpack/tar-fmt.h`)
-* .iso format (`ffpack/iso-fmt.h`)
+* .gz format (`ffpack/base/gz.h`)
+* .xz format (`ffpack/base/xz.h`)
+* .zip format (`ffpack/base/zip.h`)
+* .7z format (`ffpack/base/7z.h`)
+* .tar format (`ffpack/base/tar.h`)
+* .iso format (`ffpack/base/iso.h`)
 
 
 ## How to use
@@ -86,7 +86,7 @@ Use helper functions and structures if you want to write your own readers and wr
 
 4. And then just use the necessary files:
 
-		#include <ffpack/zipread.h>
+		#include <ffpack/zip-read.h>
 
 
 ## How to use the reader (single-file)

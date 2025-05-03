@@ -22,7 +22,7 @@ ffzipwrite_error
 
 #pragma once
 
-#include <ffpack/zip-fmt.h>
+#include <ffpack/base/zip.h>
 #include <ffpack/path.h>
 #include <ffbase/string.h>
 #include <ffbase/vector.h>
@@ -119,10 +119,10 @@ enum FFZIPWRITE_R {
 };
 
 #ifdef FFPACK_ZIPWRITE_ZLIB
-	#include <ffpack/zipwrite-libz.h>
+	#include <ffpack/zip-write-libz.h>
 #endif
 #ifdef FFPACK_ZIPWRITE_ZSTD
-	#include <ffpack/zipwrite-zstd.h>
+	#include <ffpack/zip-write-zstd.h>
 #endif
 
 /** Write the next chunk

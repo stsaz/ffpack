@@ -1,8 +1,8 @@
 /** ffpack: .iso tester
 2021, Simon Zolin */
 
-#include <ffpack/isoread.h>
-#include <ffpack/isowrite.h>
+#include <ffpack/iso-read.h>
+#include <ffpack/iso-write.h>
 #include <test/test.h>
 
 #define fflog(fmt, ...)  (void) printf(fmt "\n", ##__VA_ARGS__)
@@ -99,7 +99,7 @@ static void test_iso_read(ffvec *data, ffuint opt)
 
 	ffisoread iso = {};
 	iso.options = opt;
-	ffisoread_init(&iso);
+	ffisoread_open(&iso);
 
 	for (;;) {
 		r = ffisoread_process(&iso, &in, &out);

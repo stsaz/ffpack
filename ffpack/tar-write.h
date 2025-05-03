@@ -13,7 +13,7 @@ fftarwrite_error
 
 #pragma once
 
-#include <ffpack/tar-fmt.h>
+#include <ffpack/base/tar.h>
 #include <ffpack/path.h>
 
 typedef struct fftarwrite {

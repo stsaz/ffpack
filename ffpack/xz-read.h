@@ -13,7 +13,7 @@ ffxzread_getinfo
 
 #pragma once
 
-#include <ffpack/xz-fmt.h>
+#include <ffpack/base/xz.h>
 #include <ffbase/vector.h>
 #include <ffbase/string.h>
 #include <lzma/lzma-ff.h>

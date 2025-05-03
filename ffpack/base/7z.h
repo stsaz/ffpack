@@ -1014,12 +1014,13 @@ EncodedHeader (0x17)
   ...
 */
 
-static const struct z7_binblock z7_hdr_ctx[];
-static const struct z7_binblock z7_stminfo_ctx[];
-static const struct z7_binblock z7_stm_packinfo_ctx[];
-static const struct z7_binblock z7_stm_unpackinfo_ctx[];
-static const struct z7_binblock z7_stm_substminfo_ctx[];
-static const struct z7_binblock z7_fileinfo_ctx[];
+static const struct z7_binblock
+	z7_hdr_ctx[],
+	z7_stminfo_ctx[],
+	z7_stm_packinfo_ctx[],
+	z7_stm_unpackinfo_ctx[],
+	z7_stm_substminfo_ctx[],
+	z7_fileinfo_ctx[];
 
 static const struct z7_binblock z7_ctx_top[] = {
 	{ Z7_T_Header | Z7_F_CHILDREN,	z7_hdr_ctx },

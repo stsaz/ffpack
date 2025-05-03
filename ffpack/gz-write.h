@@ -11,7 +11,7 @@ ffgzwrite_error
 
 #pragma once
 
-#include <ffpack/gz-fmt.h>
+#include <ffpack/base/gz.h>
 #include <ffbase/string.h>
 #include <zlib/zlib-ff.h>
 

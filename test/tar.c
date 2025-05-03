@@ -1,8 +1,8 @@
 /** ffpack: tar.h tester
 2020, Simon Zolin */
 
-#include <ffpack/tarread.h>
-#include <ffpack/tarwrite.h>
+#include <ffpack/tar-read.h>
+#include <ffpack/tar-write.h>
 #include <test/test.h>
 #include <ffbase/mem-print.h>
 

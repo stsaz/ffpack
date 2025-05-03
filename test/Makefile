@@ -6,7 +6,7 @@ FFPACK_DIR := $(ROOT)/ffpack
 FFBASE_DIR := $(ROOT)/ffbase
 HEADERS := $(wildcard $(FFPACK_DIR)/ffpack/*.h)
 
-include $(FFPACK_DIR)/makeconf
+include $(FFPACK_DIR)/config.mk
 
 TESTER := ffpack-test$(DOTEXE)
 

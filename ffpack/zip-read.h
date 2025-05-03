@@ -22,7 +22,7 @@ ffzipread_fileread
 #pragma once
 
 #include <ffpack/path.h>
-#include <ffpack/zip-fmt.h>
+#include <ffpack/base/zip.h>
 #include <ffbase/vector.h>
 #include <ffbase/string.h>
 
@@ -149,10 +149,10 @@ static inline void ffzipread_fileread(ffzipread *z, ffuint64 hdr_offset, ffuint6
 
 
 #ifdef FFPACK_ZIPREAD_ZLIB
-	#include <ffpack/zipread-libz.h>
+	#include <ffpack/zip-read-libz.h>
 #endif
 #ifdef FFPACK_ZIPREAD_ZSTD
-	#include <ffpack/zipread-zstd.h>
+	#include <ffpack/zip-read-zstd.h>
 #endif
 
 

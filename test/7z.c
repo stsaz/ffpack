@@ -1,7 +1,7 @@
 /** ffpack: .7z tester
 2021, Simon Zolin */
 
-#include <ffpack/7zread.h>
+#include <ffpack/7z-read.h>
 #include <test/test.h>
 
 #define fflog(fmt, ...)  (void) printf(fmt "\n", ##__VA_ARGS__)
