@@ -62,9 +62,7 @@ endif
 
 CFLAGS += -I$(LIBDIR) \
 	-DXXH_NAMESPACE=ZSTD_ -DDEBUGLEVEL=0 -DZSTD_MULTITHREAD -DZSTDLIB_VISIBILITY= -DZDICTLIB_VISIBILITY= -DZSTDERRORLIB_VISIBILITY= \
-	-O3 -flto -fno-asynchronous-unwind-tables -fvisibility=hidden -fpic
-
-LINKFLAGS += -shared -s $(LINK_INSTALLNAME_LOADERPATH)
+	-O3 -flto -fno-asynchronous-unwind-tables -fvisibility=hidden
 
 zstd-ff.o: $(FFPACK)/zstd/zstd-ff.c $(FFPACK)/zstd/zstd-ff.h
 	$(C) $(CFLAGS) $< -o $@
@@ -76,7 +74,7 @@ zstd-ff.o: $(FFPACK)/zstd/zstd-ff.c $(FFPACK)/zstd/zstd-ff.h
 	$(C) $(CFLAGS) $< -o $@
 
 $(LIB): $(OBJ)
-	$(LINK) $(LINKFLAGS) $+ $(LINK_PTHREAD) -o $@
+	$(LINK) -shared $+ $(LINKFLAGS) $(LINK_PTHREAD) -o $@
 
 
 cleanobj:

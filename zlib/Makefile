@@ -36,12 +36,10 @@ OBJ := zlib-ff.o $(SRC:.c=.o)
 
 CFLAGS += -I$(PKGDIR) \
 	-DZ_EXP -DNO_GZIP -DHAVE_UNISTD_H -DHAVE_STDARG_H -D_LARGEFILE64_SOURCE=1 \
-	-O3 -flto -fvisibility=hidden -fno-asynchronous-unwind-tables -fpic
+	-O3 -flto -fvisibility=hidden -fno-asynchronous-unwind-tables
 ifneq ($(OS),win)
 	CFLAGS += -DHAVE_HIDDEN
 endif
-
-LINKFLAGS += -fpic $(LINK_INSTALLNAME_LOADERPATH) -s
 
 zlib-ff.o: $(FFPACK)/zlib/zlib-ff.c $(FFPACK)/zlib/zlib-ff.h
 	$(C) $(CFLAGS) $< -o $@
