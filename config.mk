@@ -1,4 +1,4 @@
-include ../ffbase/conf.mk
+include $(FFPACK)/../ffbase/conf.mk
 
 FPK_CF := -fpic
 CFLAGS += $(FPK_CF)
@@ -11,8 +11,8 @@ LINKXXFLAGS += $(FPK_LF) -static-libstdc++
 
 # Set utils
 CURL := curl -L
-UNTAR_ZST := tar -x --zstd -f
-UNTAR_XZ := tar xJf
+UNTAR_ZST := tar -x --no-same-owner -f
+UNTAR_XZ := tar -x --no-same-owner -f
 
 SYS := $(OS)
 ifeq "$(SYS)" "android"

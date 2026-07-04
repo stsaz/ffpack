@@ -2,9 +2,9 @@
 
 include ../config.mk
 
-VER := 1.2.11
-URL := https://www.zlib.net/zlib-$(VER).tar.xz
-SHA256SUM := 4ff941449631ace0d4d203e3483be9dbc9da454084111f97ea0a2114e19bf066
+VER := 1.3.2
+URL := https://github.com/madler/zlib/releases/download/v$(VER)/zlib-$(VER).tar.xz
+SHA256SUM := d7a0654783a4da529d1bb793b7ad9c3318020af77667bcae35f95d0e42a792f3
 PKG := $(FFPACK)/zlib/$(notdir $(URL))
 PKGDIR := zlib-$(VER)
 LIB := libz-ffpack.$(SO)

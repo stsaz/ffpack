@@ -1,5 +1,4 @@
 # ffpack: libzstd
-# 2021, Simon Zolin
 
 include ../config.mk
 

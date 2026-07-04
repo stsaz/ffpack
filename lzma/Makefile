@@ -1,5 +1,4 @@
 # ffpack: lzma compression and filters from xz
-# 2020, Simon Zolin
 
 include ../config.mk
 
