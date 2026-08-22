@@ -4,7 +4,7 @@ include ../config.mk
 
 VER := 1.3.2
 URL := https://github.com/madler/zlib/releases/download/v$(VER)/zlib-$(VER).tar.xz
-SHA256SUM := d7a0654783a4da529d1bb793b7ad9c3318020af77667bcae35f95d0e42a792f3
+PKG_SHA256 := d7a0654783a4da529d1bb793b7ad9c3318020af77667bcae35f95d0e42a792f3
 PKG := $(FFPACK)/zlib/$(notdir $(URL))
 PKGDIR := zlib-$(VER)
 LIB := libz-ffpack.$(SO)
@@ -19,8 +19,8 @@ $(PKG):
 
 # unpack
 $(PKGDIR): $(PKG)
-	echo "$(SHA256SUM) *$(PKG)" | sha256sum -c -
-	$(UNTAR_XZ) $(PKG)
+	echo "$(PKG_SHA256) *$(PKG)" | $(SHA256SUM) -c -
+	$(UNTAR) $(PKG)
 	touch $@
 
 # build
@@ -50,7 +50,7 @@ zlib-ff.o: $(FFPACK)/zlib/zlib-ff.c $(FFPACK)/zlib/zlib-ff.h
 $(LIB): $(OBJ)
 	$(LINK) -shared $+ $(LINKFLAGS) -o $@
 
-libz.a: $(OBJ)
+libz.a: $(OBJ) crc32.o
 	$(AR) rcs $@ $+
 
 clean:

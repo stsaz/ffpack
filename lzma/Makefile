@@ -2,8 +2,9 @@
 
 include ../config.mk
 
-VER := 5.2.4
-URL := https://tukaani.org/xz/xz-$(VER).tar.xz
+VER := 5.8.3
+URL := https://github.com/tukaani-project/xz/releases/download/v$(VER)/xz-$(VER).tar.xz
+PKG_SHA256 := fff1ffcf2b0da84d308a14de513a1aa23d4e9aa3464d17e64b9714bfdd0bbfb6
 PKG := $(FFPACK)/lzma/$(notdir $(URL))
 PKGDIR := xz-$(VER)
 LIB := liblzma-ffpack.$(SO)
@@ -17,7 +18,8 @@ $(PKG):
 
 # unpack, patch
 $(PKGDIR): $(PKG)
-	$(UNTAR_XZ) $(PKG)
+	echo "$(PKG_SHA256) *$(PKG)" | $(SHA256SUM) -c -
+	$(UNTAR) $(PKG)
 	patch -d $(PKGDIR) -p1 <$(FFPACK)/lzma/0001-x86-filter.patch
 
 # configure
@@ -26,7 +28,7 @@ ifneq ($(CROSS_PREFIX),)
 	CONFIGURE_ARGS += --host=x86_64-w64-mingw32
 endif
 
-$(PKGDIR)/config.h: $(PKGDIR)
+$(PKGDIR)/config.h: | $(PKGDIR)
 	cd $(PKGDIR) && ./configure $(CONFIGURE_ARGS) && \
 		sed 's/#define HAVE_VISIBILITY 1/#define HAVE_VISIBILITY 0/' -i ./config.h
 
@@ -37,9 +39,7 @@ SRC := \
 	\
 	$(PKGDIR)/src/liblzma/check/check.c \
 	$(PKGDIR)/src/liblzma/check/crc32_fast.c \
-	$(PKGDIR)/src/liblzma/check/crc32_table.c \
 	$(PKGDIR)/src/liblzma/check/crc64_fast.c \
-	$(PKGDIR)/src/liblzma/check/crc64_table.c \
 	$(PKGDIR)/src/liblzma/check/sha256.c \
 	$(PKGDIR)/src/liblzma/common/alone_decoder.c \
 	$(PKGDIR)/src/liblzma/common/alone_encoder.c \
@@ -68,6 +68,7 @@ SRC := \
 	$(PKGDIR)/src/liblzma/common/index_decoder.c \
 	$(PKGDIR)/src/liblzma/common/index_encoder.c \
 	$(PKGDIR)/src/liblzma/common/index_hash.c \
+	$(PKGDIR)/src/liblzma/common/lzip_decoder.c \
 	$(PKGDIR)/src/liblzma/common/outqueue.c \
 	$(PKGDIR)/src/liblzma/common/stream_buffer_encoder.c \
 	$(PKGDIR)/src/liblzma/common/stream_encoder.c \
@@ -92,6 +93,7 @@ SRC := \
 	$(PKGDIR)/src/liblzma/lzma/lzma_encoder_presets.c \
 	$(PKGDIR)/src/liblzma/rangecoder/price_table.c \
 	$(PKGDIR)/src/liblzma/simple/arm.c \
+	$(PKGDIR)/src/liblzma/simple/arm64.c \
 	$(PKGDIR)/src/liblzma/simple/armthumb.c \
 	$(PKGDIR)/src/liblzma/simple/ia64.c \
 	$(PKGDIR)/src/liblzma/simple/powerpc.c \
@@ -99,10 +101,11 @@ SRC := \
 	$(PKGDIR)/src/liblzma/simple/simple_decoder.c \
 	$(PKGDIR)/src/liblzma/simple/simple_encoder.c \
 	$(PKGDIR)/src/liblzma/simple/sparc.c \
+	$(PKGDIR)/src/liblzma/simple/riscv.c \
 	$(PKGDIR)/src/liblzma/simple/x86.c
 OBJ := lzma-ff.o $(SRC:.c=.o)
 
-CFLAGS := -I$(FFPACK)/lzma -I$(PKGDIR) \
+CFLAGS += -I$(FFPACK)/lzma -I$(PKGDIR) \
 	-I$(PKGDIR)/src/liblzma/ \
 	-I$(PKGDIR)/src/liblzma/api \
 	-I$(PKGDIR)/src/liblzma/check \
@@ -114,12 +117,7 @@ CFLAGS := -I$(FFPACK)/lzma -I$(PKGDIR) \
 	-I$(PKGDIR)/src/liblzma/simple \
 	-I$(PKGDIR)/src/common \
 	-DHAVE_CONFIG_H -DTUKLIB_SYMBOL_PREFIX=lzma_ \
-	-Wall -Wextra -Wvla -Wformat=2 -Winit-self -Wmissing-include-dirs -Wstrict-aliasing -Wfloat-equal \
-	-Wundef -Wshadow -Wpointer-arith -Wbad-function-cast -Wwrite-strings -Wlogical-op -Waggregate-return \
-	-Wstrict-prototypes -Wold-style-definition -Wmissing-prototypes -Wmissing-declarations -Wmissing-noreturn -Wredundant-decls \
 	-O3 -flto -fvisibility=hidden -fno-asynchronous-unwind-tables -fpic -pthread
-
-LDFLAGS := $(LINK_INSTALLNAME_LOADERPATH) -shared -s
 
 lzma-ff.o: $(FFPACK)/lzma/lzma-ff.c
 	$(C) $(CFLAGS) $< -o $@
@@ -139,7 +137,7 @@ $(PKGDIR)/src/liblzma/%.o: $(PKGDIR)/src/liblzma/%.c $(HEADERS)
 	$(C) $(CFLAGS) $< -o $@
 
 $(LIB): $(OBJ)
-	$(LINK) $(LDFLAGS) $+ -o $@
+	$(LINK) -shared $(LINKFLAGS) $+ -o $@
 
 clean:
 	$(RM) $(OBJ) $(PKGDIR)

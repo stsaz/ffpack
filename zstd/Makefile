@@ -4,7 +4,7 @@ include ../config.mk
 
 VER := 1.5.7
 URL := https://github.com/facebook/zstd/releases/download/v$(VER)/zstd-$(VER).tar.zst
-MD5SUM := 5b02ed5b57fdfad22db1c6a9c55ff340
+PKG_SHA256 := 5b331d961d6989dc21bb03397fc7a2a4d86bc65a14adc5ffbbce050354e30fd2
 PKG := $(FFPACK)/zstd/zstd-$(VER).tar.zst
 PKGDIR := zstd-$(VER)
 LIBDIR := zstd-$(VER)/lib
@@ -19,8 +19,8 @@ $(PKG):
 
 # unpack
 $(LIBDIR): $(PKG)
-	echo "$(MD5SUM) *$(PKG)" | md5sum -c -
-	$(UNTAR_ZST) $<
+	echo "$(PKG_SHA256) *$(PKG)" | $(SHA256SUM) -c -
+	$(UNTAR) $<
 
 # build
 OBJ := zstd-ff.o \

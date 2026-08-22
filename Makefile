@@ -19,12 +19,3 @@ libz-ffpack.$(SO):
 zstd: libzstd-ffpack.$(SO)
 libzstd-ffpack.$(SO):
 	$(MAKE) -f $(FFPACK)/zstd/Makefile
-
-md5:
-	cd $(FFPACK) && md5sum -b \
-		lzma/xz-5.2.4.tar.xz \
-		zlib/zlib-1.2.11.tar.xz \
-		>packages.md5
-
-md5check:
-	cd $(FFPACK) && md5sum -c packages.md5 --ignore-missing

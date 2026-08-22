@@ -11,8 +11,7 @@ LINKXXFLAGS += $(FPK_LF) -static-libstdc++
 
 # Set utils
 CURL := curl -L
-UNTAR_ZST := tar -x --no-same-owner -f
-UNTAR_XZ := tar -x --no-same-owner -f
+UNTAR := tar -x --no-same-owner -f
 
 SYS := $(OS)
 ifeq "$(SYS)" "android"

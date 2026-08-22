@@ -277,6 +277,12 @@ make
 ./ffpack-test all
 ```
 
+## Third-party code
+
+* [xz](https://github.com/tukaani-project/xz)
+* [zlib](https://github.com/madler/zlib)
+* [zstd](https://github.com/facebook/zstd)
+
 ## License
 
 ffpack is in the public domain.
