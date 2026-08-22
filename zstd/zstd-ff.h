@@ -8,6 +8,7 @@ Simon Zolin, 2021 */
 #define EXP  __declspec(dllexport)
 #else
 #define EXP  __attribute__((visibility("default")))
+#include <sys/types.h>
 #endif
 
 #ifdef __cplusplus
