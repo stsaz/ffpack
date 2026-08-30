@@ -36,7 +36,7 @@ OBJ := zlib-ff.o $(SRC:.c=.o)
 
 CFLAGS += -I$(PKGDIR) \
 	-DZ_EXP -DNO_GZIP -DHAVE_UNISTD_H -DHAVE_STDARG_H -D_LARGEFILE64_SOURCE=1 \
-	-O3 -flto -fvisibility=hidden -fno-asynchronous-unwind-tables
+	-O3 -flto -fno-asynchronous-unwind-tables
 ifneq ($(OS),win)
 	CFLAGS += -DHAVE_HIDDEN
 endif

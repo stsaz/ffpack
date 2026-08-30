@@ -61,7 +61,7 @@ endif
 
 CFLAGS += -I$(LIBDIR) \
 	-DXXH_NAMESPACE=ZSTD_ -DDEBUGLEVEL=0 -DZSTD_MULTITHREAD -DZSTDLIB_VISIBILITY= -DZDICTLIB_VISIBILITY= -DZSTDERRORLIB_VISIBILITY= \
-	-O3 -flto -fno-asynchronous-unwind-tables -fvisibility=hidden
+	-O3 -flto -fno-asynchronous-unwind-tables
 
 zstd-ff.o: $(FFPACK)/zstd/zstd-ff.c $(FFPACK)/zstd/zstd-ff.h
 	$(C) $(CFLAGS) $< -o $@

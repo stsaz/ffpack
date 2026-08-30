@@ -117,7 +117,7 @@ CFLAGS += -I$(FFPACK)/lzma -I$(PKGDIR) \
 	-I$(PKGDIR)/src/liblzma/simple \
 	-I$(PKGDIR)/src/common \
 	-DHAVE_CONFIG_H -DTUKLIB_SYMBOL_PREFIX=lzma_ \
-	-O3 -flto -fvisibility=hidden -fno-asynchronous-unwind-tables -fpic -pthread
+	-O3 -flto -fno-asynchronous-unwind-tables -pthread
 
 lzma-ff.o: $(FFPACK)/lzma/lzma-ff.c
 	$(C) $(CFLAGS) $< -o $@
